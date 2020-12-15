@@ -746,9 +746,12 @@ public:
 	void SetWaryOfTeam(TeamTypes eTeam, bool bValue);
 
 #if defined(MOD_BALANCE_CORE_MINORS)  || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
-	int GetJerk(TeamTypes eTeam) const;
-	void SetJerk(TeamTypes eTeam, int iValue);
-	void ChangeJerk(TeamTypes eTeam, int iChange);
+	int GetTurnLastAttacked(TeamTypes eTeam) const;
+	void SetTurnLastAttacked(TeamTypes eTeam, int iTurn);
+	int GetJerkTurnsRemaining(TeamTypes eTeam) const;
+
+	bool IsIgnoreJerk(TeamTypes eTeam) const;
+	void SetIgnoreJerk(TeamTypes eTeam, bool bValue);
 
 	PlayerTypes GetPermanentAlly() const;
 	void SetPermanentAlly(PlayerTypes ePlayer);
@@ -816,7 +819,8 @@ private:
 #endif
 
 #if defined(MOD_BALANCE_CORE_MINORS)  || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
-	int m_aiJerk[REALLY_MAX_TEAMS];
+	int m_aiTurnLastAttacked[REALLY_MAX_TEAMS];
+	bool m_abIgnoreJerk[REALLY_MAX_TEAMS];
 	bool m_abIsMarried[MAX_MAJOR_CIVS];
 	PlayerTypes m_ePermanentAlly;
 	bool m_bNoAlly;

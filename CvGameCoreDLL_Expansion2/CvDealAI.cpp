@@ -779,7 +779,7 @@ DemandResponseTypes CvDealAI::DoHumanDemand(CvDeal* pDeal)
 		}
 
 		if (iValueDemanded == 0)
-			eResponse = DEMAND_RESPONSE_REFUSE_WEAK;
+			eResponse = DEMAND_RESPONSE_REFUSE_TOO_SOON;
 		// No illegal items in the demand
 		else if (eResponse == NO_DEAL_RESPONSE_TYPE)
 		{
@@ -3323,7 +3323,7 @@ int CvDealAI::GetThirdPartyWarValue(bool bFromMe, PlayerTypes eOtherPlayer, Team
 			return INT_MAX;
 		}
 		// Would this war cause us or our teammates to backstab a friend/ally? Don't do it!
-		if (pDiploAI->IsWarWouldBackstabFriendTeamCheck(eWithPlayer))
+		if (!pDiploAI->IsSaneDiplomaticWar(eWithPlayer, false))
 		{
 			return INT_MAX;
 		}
@@ -3357,64 +3357,60 @@ int CvDealAI::GetThirdPartyWarValue(bool bFromMe, PlayerTypes eOtherPlayer, Team
 		}
 
 		// Sanity check - who else would we go to war with?
-		bool bCheckPlayer = false;
-		
+		vector<PlayerTypes> vMajorsToCheck;
+
 		for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 		{
 			PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
-			if (pDiploAI->IsPlayerValid(eLoopPlayer) && eLoopPlayer != eWithPlayer)
-			{
-				// Teammate?
-				if (GET_PLAYER(eLoopPlayer).getTeam() == GET_PLAYER(eWithPlayer).getTeam())
-					bCheckPlayer = true;
-				
-				// Defensive Pact?
-				else if (GET_TEAM(GET_PLAYER(eLoopPlayer).getTeam()).IsHasDefensivePact(GET_PLAYER(eWithPlayer).getTeam()))
-					bCheckPlayer = true;
-				
-#if defined(MOD_DIPLOMACY_CIV4_FEATURES)
-				else if (MOD_DIPLOMACY_CIV4_FEATURES)
-				{
-					// Master/vassal?
-					if (GET_TEAM(GET_PLAYER(eWithPlayer).getTeam()).IsVassal(GET_PLAYER(eLoopPlayer).getTeam()) || GET_TEAM(GET_PLAYER(eLoopPlayer).getTeam()).IsVassal(GET_PLAYER(eWithPlayer).getTeam()))
-						bCheckPlayer = true;
-				}
-#endif
-				if (bCheckPlayer)
-				{
-					// Would we be declaring war on someone who's helping us in a coop war? Don't do it!
-					if (pDiploAI->IsDoFAccepted(eLoopPlayer) || pDiploAI->GetGlobalCoopWarWithState(eLoopPlayer) >= COOP_WAR_STATE_PREPARING)
-					{
-						return INT_MAX;
-					}
 
-					// Would we be declaring war on a powerful neighbor?
-					if (GetPlayer()->GetProximityToPlayer(eLoopPlayer) >= PLAYER_PROXIMITY_CLOSE)
-					{
-						if (pDiploAI->GetMajorCivApproach(eLoopPlayer) == MAJOR_CIV_APPROACH_AFRAID)
-						{
-							return INT_MAX;
-						}
-						
-						// If we're already planning a war/demand against them, then we don't care.
-						else if (pDiploAI->GetMajorCivApproach(eLoopPlayer) != MAJOR_CIV_APPROACH_WAR && pDiploAI->GetWarGoal(eLoopPlayer) != WAR_GOAL_DEMAND)
-						{
-							// Bold AIs will take more risks.
-							if (pDiploAI->GetBoldness() <= 5 || pDiploAI->GetPlayerMilitaryStrengthComparedToUs(eLoopPlayer) >= STRENGTH_POWERFUL)
-							{
-								return INT_MAX;
-							}
-						}
-					}
-					
-					bCheckPlayer = false;
+			if (pDiploAI->IsPlayerValid(eLoopPlayer) && eLoopPlayer != eWithPlayer && GET_PLAYER(eLoopPlayer).isMajorCiv())
+			{
+				if (GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsTeammate(eWithPlayer))
+				{
+					vMajorsToCheck.push_back(eLoopPlayer);
+				}
+				else if (GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsHasDefensivePact(eWithPlayer))
+				{
+					vMajorsToCheck.push_back(eLoopPlayer);
+				}
+				else if (GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsMaster(eWithPlayer))
+				{
+					vMajorsToCheck.push_back(eLoopPlayer);
+				}
+				else if (GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsVassal(eWithPlayer))
+				{
+					vMajorsToCheck.push_back(eLoopPlayer);
 				}
 			}
 		}
+
+		for (std::vector<PlayerTypes>::iterator it = vMajorsToCheck.begin(); it != vMajorsToCheck.end(); it++)
+		{
+			// Would we be declaring war on a powerful neighbor?
+			if (GetPlayer()->GetProximityToPlayer(*it) >= PLAYER_PROXIMITY_CLOSE)
+			{
+				if (pDiploAI->GetMajorCivApproach(*it, false) == MAJOR_CIV_APPROACH_AFRAID)
+				{
+					return INT_MAX;
+				}
+				// If we're already planning a war/demand against them, then we don't care.
+				else if (pDiploAI->GetMajorCivApproach(*it, false) != MAJOR_CIV_APPROACH_WAR && pDiploAI->GetWarGoal(*it) != WAR_GOAL_DEMAND)
+				{
+					// Bold AIs will take more risks.
+					if (pDiploAI->GetBoldness() <= 5 || pDiploAI->GetPlayerMilitaryStrengthComparedToUs(*it) >= STRENGTH_POWERFUL)
+					{
+						return INT_MAX;
+					}
+				}
+			}
+		}
+
 		// Sanity check - avoid going bankrupt
-		int iAdjustedGoldPerTurn = GetPlayer()->calculateGoldRate() - pDiploAI->CalculateGoldPerTurnLostFromWar(eWithPlayer, /*bOtherPlayerEstimate*/ false, /*bIgnoreDPs*/ false);
-		if (iAdjustedGoldPerTurn < 0)
+		int iMinIncome = 2 + (GetPlayer()->GetCurrentEra() * 2);
+		if (pDiploAI->IsWarWouldBankruptUs(eWithPlayer, false, iMinIncome))
+		{
 			return INT_MAX;
+		}
 
 		//don't bite if we can't easily attack.
 		if (pDiploAI->GetPlayerTargetValue(eWithPlayer) <= TARGET_VALUE_AVERAGE)
@@ -7306,8 +7302,8 @@ DemandResponseTypes CvDealAI::GetRequestForHelpResponse(CvDeal* pDeal)
 		if (iGoldRequested == 0 && iGPTRequested == 0 && iLuxuriesRequested == 0 && iStrategicsRequested == 0 && iTechsRequested == 0)
 		{
 			// Not a perfect fix but will prevent 0 Gold requests from triggering the help request timer for now
-			eResponse = DEMAND_RESPONSE_GIFT_REFUSE_TOO_MUCH;
-		}		
+			eResponse = DEMAND_RESPONSE_GIFT_REFUSE_TOO_SOON;
+		}
 		
 		// No illegal items in the request
 		if(eResponse == NO_DEMAND_RESPONSE_TYPE)

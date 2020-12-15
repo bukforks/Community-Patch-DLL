@@ -1075,8 +1075,6 @@ protected:
 	static int lGetWonderDisputeLevel(lua_State* L);
 	static int lGetMinorCivDisputeLevel(lua_State* L);
 	static int lGetWarmongerThreat(lua_State* L);
-	static int lIsPlayerNoSettleRequestEverAsked(lua_State* L);
-	static int lIsPlayerStopSpyingRequestEverAsked(lua_State* L);
 	static int lIsDemandEverMade(lua_State* L);
 	static int lGetNumCiviliansReturnedToMe(lua_State* L);
 	static int lGetNumLandmarksBuiltForMe(lua_State* L);

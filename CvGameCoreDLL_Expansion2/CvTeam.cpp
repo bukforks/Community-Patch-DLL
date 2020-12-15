@@ -4993,7 +4993,6 @@ void CvTeam::SetHasDefensivePact(TeamTypes eIndex, bool bNewValue)
 								if (eCoopWarState == COOP_WAR_STATE_PREPARING || eCoopWarState == COOP_WAR_STATE_READY)
 								{
 									GET_PLAYER(eThirdParty).GetDiplomacyAI()->SetPlayerBrokenCoopWarPromise(eLoopPlayer, true);
-									GET_PLAYER(eThirdParty).GetDiplomacyAI()->SetPlayerBackstabCounter(eLoopPlayer, 0);
 									GET_PLAYER(eThirdParty).GetDiplomacyAI()->ChangeCoopWarScore(eLoopPlayer, -2);
 									GET_PLAYER(eThirdParty).GetDiplomacyAI()->ChangeRecentAssistValue(eLoopPlayer, 300);
 								}

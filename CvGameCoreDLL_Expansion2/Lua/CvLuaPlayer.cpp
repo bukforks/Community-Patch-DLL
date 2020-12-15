@@ -1011,8 +1011,6 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetWonderDisputeLevel);
 	Method(GetMinorCivDisputeLevel);
 	Method(GetWarmongerThreat);
-	Method(IsPlayerNoSettleRequestEverAsked);
-	Method(IsPlayerStopSpyingRequestEverAsked);
 	Method(IsDemandEverMade);
 	Method(GetNumCiviliansReturnedToMe);
 	Method(GetNumLandmarksBuiltForMe);
@@ -9063,7 +9061,7 @@ int CvLuaPlayer::lGetJerk(lua_State* L)
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	const TeamTypes eTeam = (TeamTypes) lua_tointeger(L, 2);
 
-	const int iResult = pkPlayer->GetMinorCivAI()->GetJerk(eTeam);
+	const int iResult = pkPlayer->GetMinorCivAI()->GetJerkTurnsRemaining(eTeam);
 	lua_pushinteger(L, iResult);
 	return 1;
 }
@@ -10434,7 +10432,7 @@ int CvLuaPlayer::lIsUntrustworthyFriend(lua_State* L)
 		return 0;
 	}
 
-	const bool bValue = pkPlayer->GetDiplomacyAI()->IsUntrustworthyFriend(eOtherPlayer);
+	const bool bValue = pkPlayer->GetDiplomacyAI()->IsUntrustworthy(eOtherPlayer);
 
 	lua_pushboolean(L, bValue);
 	return 1;
@@ -10583,27 +10581,6 @@ int CvLuaPlayer::lGetWarmongerThreat(lua_State* L)
 	return 1;
 }
 //------------------------------------------------------------------------------
-int CvLuaPlayer::lIsPlayerNoSettleRequestEverAsked(lua_State* L)
-{
-	CvPlayerAI* pkPlayer = GetInstance(L);
-	PlayerTypes eOtherPlayer = (PlayerTypes) lua_tointeger(L, 2);
-
-	const bool bValue = pkPlayer->GetDiplomacyAI()->IsPlayerNoSettleRequestEverAsked(eOtherPlayer);
-
-	lua_pushboolean(L, bValue);
-	return 1;
-}
-//------------------------------------------------------------------------------
-int CvLuaPlayer::lIsPlayerStopSpyingRequestEverAsked(lua_State* L)
-{
-	CvPlayerAI* pkPlayer = GetInstance(L);
-	PlayerTypes eOtherPlayer = (PlayerTypes) lua_tointeger(L, 2);
-	const bool bValue = pkPlayer->GetDiplomacyAI()->IsPlayerStopSpyingRequestEverAsked(eOtherPlayer);
-
-	lua_pushboolean(L, bValue);
-	return 1;
-}
-//------------------------------------------------------------------------------
 int CvLuaPlayer::lIsDemandEverMade(lua_State* L)
 {
 	CvPlayerAI* pkPlayer = GetInstance(L);
@@ -10698,11 +10675,9 @@ int CvLuaPlayer::lIsPlayerIgnoredMilitaryPromise(lua_State* L)
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	PlayerTypes eOtherPlayer = (PlayerTypes) lua_tointeger(L, 2);
 
-	if (eOtherPlayer != pkPlayer->GetID())
-	{
-	}
+	const bool bValue = pkPlayer->GetDiplomacyAI()->IsPlayerIgnoredMilitaryPromise(eOtherPlayer);
 
-	lua_pushboolean(L, false);
+	lua_pushboolean(L, bValue);
 	return 1;
 }
 //------------------------------------------------------------------------------
@@ -10911,7 +10886,8 @@ int CvLuaPlayer::lGetTurnsSincePlayerBulliedProtectedMinor(lua_State* L)
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	PlayerTypes eOtherPlayer = (PlayerTypes) lua_tointeger(L, 2);
 
-	const int iValue = pkPlayer->GetDiplomacyAI()->GetTurnsSincePlayerBulliedProtectedMinor(eOtherPlayer);
+	int iTurn = pkPlayer->GetDiplomacyAI()->GetOtherPlayerBulliedProtectedMinorTurn(eOtherPlayer);
+	const int iValue = (iTurn != -1) ? (GC.getGame().getGameTurn() - iTurn) : -1;
 
 	lua_pushinteger(L, iValue);
 	return 1;
@@ -11077,7 +11053,7 @@ int CvLuaPlayer::lIsAngryAboutSidedWithTheirProtectedMinor(lua_State* L)
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	PlayerTypes eOtherPlayer = (PlayerTypes) lua_tointeger(L, 2);
 
-	const bool bValue = pkPlayer->GetDiplomacyAI()->IsAngryAboutSidedWithTheirProtectedMinor(eOtherPlayer);
+	const bool bValue = pkPlayer->GetDiplomacyAI()->IsAngryAboutSidedWithProtectedMinor(eOtherPlayer);
 
 	lua_pushboolean(L, bValue);
 	return 1;
@@ -12674,7 +12650,7 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 			}
 
 			// Untrustworthy friend?
-			if (!bJustMet && pDiplo->IsTeamUntrustworthy(GET_PLAYER(ePlayer).getTeam()))
+			if (!bJustMet && pDiplo->IsUntrustworthy(ePlayer))
 			{
 				Opinion kOpinion;
 				kOpinion.m_iValue = 0;
@@ -12877,14 +12853,14 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 			kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_OPEN_BORDERS_MUTUAL");
 			aOpinions.push_back(kOpinion);
 		}
-		else if (bUsOpen)
+		else if (bThemOpen)
 		{
 			Opinion kOpinion;
 			kOpinion.m_iValue = -12;
 			kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_OPEN_BORDERS_US");
 			aOpinions.push_back(kOpinion);
 		}
-		else if (bThemOpen)
+		else if (bUsOpen)
 		{
 			Opinion kOpinion;
 			kOpinion.m_iValue = -6;
@@ -13661,11 +13637,12 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 		{
 			if (!pDiplo->IsFriendDenouncedUs(ePlayer) && !pDiplo->IsFriendDeclaredWarOnUs(ePlayer))
 			{
-				int iTurn = GC.getGame().getGameTurn();
-				iTurn -= pDiplo->GetDoFBrokenTurn(ePlayer);
-				if (iTurn < 10)
+				int iTurns = pDiplo->GetTurnsSinceDoFBroken(ePlayer);
+				int iTimer = /*10*/ GC.getDOF_BROKEN_BACKSTAB_TIMER();
+
+				if (iTurns < iTimer)
 				{	
-					iValue = (10 - iTurn);
+					iValue = (iTimer - iTurns);
 					Opinion kOpinion;
 					kOpinion.m_iValue = 0;
 					CvString str;
@@ -13947,14 +13924,14 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 				kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_OPEN_BORDERS_MUTUAL");
 				aOpinions.push_back(kOpinion);
 			}
-			else if (bUsOpen)
+			else if (bThemOpen)
 			{
 				Opinion kOpinion;
 				kOpinion.m_iValue = iValue;
 				kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_OPEN_BORDERS_US");
 				aOpinions.push_back(kOpinion);
 			}
-			else if (bThemOpen)
+			else if (bUsOpen)
 			{
 				Opinion kOpinion;
 				kOpinion.m_iValue = iValue;
@@ -14228,6 +14205,15 @@ int CvLuaPlayer::lGetOpinionTable(lua_State* L)
 			Opinion kOpinion;
 			kOpinion.m_iValue = iValue;
 			kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_MILITARY_PROMISE");
+			aOpinions.push_back(kOpinion);
+		}
+
+		iValue = pDiplo->GetIgnoredMilitaryPromiseScore(ePlayer);
+		if (iValue != 0)
+		{
+			Opinion kOpinion;
+			kOpinion.m_iValue = iValue;
+			kOpinion.m_str = Localization::Lookup("TXT_KEY_DIPLO_MILITARY_PROMISE_IGNORED");
 			aOpinions.push_back(kOpinion);
 		}
 
@@ -15725,7 +15711,10 @@ int CvLuaPlayer::lGetPlayerMoveTroopsRequestCounter(lua_State* L)
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	PlayerTypes eOtherPlayer = (PlayerTypes) lua_tointeger(L, 2);
 
-	lua_pushinteger(L, pkPlayer->GetDiplomacyAI()->GetPlayerMoveTroopsRequestCounter(eOtherPlayer));
+	int iTurn = pkPlayer->GetDiplomacyAI()->GetPlayerMoveTroopsRequestAcceptedTurn(eOtherPlayer);
+	const int iValue = (iTurn != -1) ? (GC.getGame().getGameTurn() - iTurn) : -1;
+
+	lua_pushinteger(L, iValue);
 	return 1;
 }
 

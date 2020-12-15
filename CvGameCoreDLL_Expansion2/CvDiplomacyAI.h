@@ -282,7 +282,7 @@ public:
 	// Demand Target
 	PlayerTypes GetDemandTargetPlayer() const;
 	void SetDemandTargetPlayer(PlayerTypes ePlayer);
-	bool IsDemandReady();
+	bool IsDemandReady() const;
 	void SetDemandReady(bool bValue);
 
 	// ------------------------------------
@@ -321,16 +321,14 @@ public:
 	// Demands
 	int GetNumDemandEverMade(PlayerTypes ePlayer) const;
 	void SetNumDemandEverMade(PlayerTypes ePlayer, int iValue);
+	void ChangeNumDemandEverMade(PlayerTypes ePlayer, int iChange);
 	bool IsDemandEverMade(PlayerTypes ePlayer) const;
 
 	int GetDemandMadeTurn(PlayerTypes ePlayer) const;
-	void SetDemandMadeTurn(PlayerTypes ePlayer, int iValue);
+	void SetDemandMadeTurn(PlayerTypes ePlayer, int iTurn);
 
-	short GetDemandCounter(PlayerTypes ePlayer) const;
-	void SetDemandCounter(PlayerTypes ePlayer, int iValue);
-	void ChangeDemandCounter(PlayerTypes ePlayer, int iChange);
-
-	short GetDemandTooSoonNumTurns(PlayerTypes ePlayer) const;
+	int GetDemandTooSoonNumTurns(PlayerTypes ePlayer) const;
+	void SetDemandTooSoonNumTurns(PlayerTypes ePlayer, int iValue);
 	bool IsDemandTooSoon(PlayerTypes ePlayer) const;
 
 	// Assistance Values
@@ -458,27 +456,33 @@ public:
 	// Backstabbing Penalties
 	// ------------------------------------
 
+	// Have we ever betrayed a friend?
+	bool IsBackstabber() const;
+	void SetBackstabber(bool bValue);
+
 	// Is this friend untrustworthy?
-	bool IsUntrustworthyFriend(PlayerTypes ePlayer) const;
-	bool IsTeamUntrustworthy(TeamTypes eTeam) const;
+	bool IsUntrustworthyFriend(PlayerTypes ePlayer) const; // our opinion alone
 	void SetUntrustworthyFriend(PlayerTypes ePlayer, bool bValue);
+	bool IsUntrustworthy(PlayerTypes ePlayer) const; // our opinion plus all of our teammates' opinions (true if anyone thinks they're a backstabber)
+	void SetUntrustworthy(PlayerTypes ePlayer, bool bValue);
 
 	// Did this friend ever betray us?
 	bool WasEverBackstabbedBy(PlayerTypes ePlayer) const;
-	bool WasOurTeamEverBackstabbedBy(PlayerTypes ePlayer) const;
 	void SetEverBackstabbedBy(PlayerTypes ePlayer, bool bValue);
+	void SetBackstabbedBy(PlayerTypes ePlayer, bool bValue);
 
 	// DoF Broken?
 	bool IsDoFBroken(PlayerTypes ePlayer) const;
 	void SetDoFBroken(PlayerTypes ePlayer, bool bValue);
 	int GetDoFBrokenTurn(PlayerTypes ePlayer) const;
-	void SetDoFBrokenTurn(PlayerTypes ePlayer, int iValue);
+	void SetDoFBrokenTurn(PlayerTypes ePlayer, int iTurn);
+	int GetTurnsSinceDoFBroken(PlayerTypes ePlayer) const;
 
 	// They denounced us while we were friends!
 	bool IsFriendDenouncedUs(PlayerTypes ePlayer) const;
 	void SetFriendDenouncedUs(PlayerTypes ePlayer, bool bValue);
 	int GetFriendDenouncedUsTurn(PlayerTypes ePlayer) const;
-	void SetFriendDenouncedUsTurn(PlayerTypes ePlayer, int iValue);
+	void SetFriendDenouncedUsTurn(PlayerTypes ePlayer, int iTurn);
 	int GetNumFriendsDenouncedBy();
 	int GetWeDenouncedFriendCount();
 
@@ -488,11 +492,6 @@ public:
 	int GetFriendDeclaredWarOnUsTurn(PlayerTypes ePlayer) const;
 	void SetFriendDeclaredWarOnUsTurn(PlayerTypes ePlayer, int iValue);
 	int GetWeDeclaredWarOnFriendCount();
-
-	// Backstab counter
-	short GetPlayerBackstabCounter(PlayerTypes ePlayer) const;
-	void SetPlayerBackstabCounter(PlayerTypes ePlayer, int iValue);
-	void ChangePlayerBackstabCounter(PlayerTypes ePlayer, int iChange);
 
 	// ------------------------------------
 	// Warmongering Penalties
@@ -604,123 +603,101 @@ public:
 	int GetPlayerMilitaryPromiseTurn(PlayerTypes ePlayer) const;
 	void SetPlayerMilitaryPromiseTurn(PlayerTypes ePlayer, int iTurn);
 	bool IsPlayerMadeMilitaryPromise(PlayerTypes ePlayer) const;
-	void SetPlayerMadeMilitaryPromise(PlayerTypes ePlayer, bool bValue);
 	int GetPlayerMadeMilitaryPromise(PlayerTypes ePlayer);
+	bool IsPlayerIgnoredMilitaryPromise(PlayerTypes ePlayer) const;
 	bool IsPlayerBrokenMilitaryPromise(PlayerTypes ePlayer) const;
 
 	// Expansion Promise
-	bool IsPlayerNoSettleRequestAccepted(PlayerTypes ePlayer) const;
-	void SetPlayerNoSettleRequestAccepted(PlayerTypes ePlayer, bool bValue);
-	vector<PlayerTypes> GetPlayersWithNoSettlePolicy() const;
-	short GetPlayerNoSettleRequestCounter(PlayerTypes ePlayer) const;
-	void SetPlayerNoSettleRequestCounter(PlayerTypes ePlayer, int iValue);
-	void ChangePlayerNoSettleRequestCounter(PlayerTypes ePlayer, int iChange);
-	bool IsDontSettleMessageTooSoon(PlayerTypes ePlayer) const;
-	bool IsPlayerMadeExpansionPromise(PlayerTypes ePlayer, int iTestGameTurn = -1) const;
-	void SetPlayerMadeExpansionPromise(PlayerTypes ePlayer, bool bValue);
-	int GetPlayerMadeExpansionPromise(PlayerTypes ePlayer) const;
-	AggressivePostureTypes GetPlayerExpansionPromiseData(PlayerTypes ePlayer);
-	bool IsPlayerBrokenExpansionPromise(PlayerTypes ePlayer) const;
-	void SetPlayerBrokenExpansionPromise(PlayerTypes ePlayer, bool bValue);
+	PromiseStates GetPlayerExpansionPromiseState(PlayerTypes ePlayer) const;
+	void SetPlayerExpansionPromiseState(PlayerTypes ePlayer, PromiseStates ePromiseState);
+	bool IsPlayerMadeExpansionPromise(PlayerTypes ePlayer) const;
 	bool IsPlayerIgnoredExpansionPromise(PlayerTypes ePlayer) const;
-	void SetPlayerIgnoredExpansionPromise(PlayerTypes ePlayer, bool bValue);
-	pair<int,int> GetNoExpansionPromiseClosestCities(PlayerTypes eOtherPlayer);
+	bool IsPlayerBrokenExpansionPromise(PlayerTypes ePlayer) const;
+	vector<PlayerTypes> GetPlayersWithNoSettlePolicy() const;
+	int GetPlayerExpansionPromiseTurn(PlayerTypes ePlayer) const;
+	void SetPlayerExpansionPromiseTurn(PlayerTypes ePlayer, int iTurn);
+	int GetPlayerMadeExpansionPromise(PlayerTypes ePlayer) const;
+	bool IsDontSettleMessageTooSoon(PlayerTypes ePlayer) const;
+	AggressivePostureTypes GetPlayerExpansionPromisePosture(PlayerTypes ePlayer) const;
+	void SetPlayerExpansionPromisePosture(PlayerTypes ePlayer, AggressivePostureTypes ePosture);
+	pair<int,int> GetNoExpansionPromiseClosestCities(PlayerTypes eOtherPlayer) const;
 	void SetNoExpansionPromiseClosestCities(PlayerTypes eOtherPlayer, pair<int,int> value);
-	pair<int,int> GetLastTurnClosestCityPair(PlayerTypes eOtherPlayer);
+	pair<int,int> GetLastTurnClosestCityPair(PlayerTypes eOtherPlayer) const;
 	void SetLastTurnClosestCityPair(PlayerTypes eOtherPlayer, pair<int,int> value);
-	int GetBrokenExpansionPromiseValue(PlayerTypes ePlayer);
-	void SetBrokenExpansionPromiseValue(PlayerTypes ePlayer, int iValue);
-	void ChangeBrokenExpansionPromiseValue(PlayerTypes ePlayer, int iChange);
-	int GetIgnoredExpansionPromiseValue(PlayerTypes ePlayer);
-	void SetIgnoredExpansionPromiseValue(PlayerTypes ePlayer, int iValue);
-	void ChangeIgnoredExpansionPromiseValue(PlayerTypes ePlayer, int iChange);
-	bool IsPlayerNoSettleRequestEverAsked(PlayerTypes ePlayer) const;
-	void SetPlayerNoSettleRequestEverAsked(PlayerTypes ePlayer, bool bValue);
-	bool EverMadeExpansionPromise(PlayerTypes ePlayer);
+	bool EverMadeExpansionPromise(PlayerTypes ePlayer) const;
 	void SetEverMadeExpansionPromise(PlayerTypes ePlayer, bool bValue);
 
 	// Border Promise
-	bool IsPlayerMadeBorderPromise(PlayerTypes ePlayer, int iTestGameTurn = -1);
-	void SetPlayerMadeBorderPromise(PlayerTypes ePlayer, bool bValue);
-	int GetPlayerMadeBorderPromise(PlayerTypes ePlayer);
-	AggressivePostureTypes GetPlayerBorderPromiseData(PlayerTypes ePlayer);
-	void SetPlayerBorderPromiseData(PlayerTypes ePlayer, AggressivePostureTypes eValue);
-	bool IsPlayerBrokenBorderPromise(PlayerTypes ePlayer);
-	void SetPlayerBrokenBorderPromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerIgnoredBorderPromise(PlayerTypes ePlayer);
-	void SetPlayerIgnoredBorderPromise(PlayerTypes ePlayer, bool bValue);
-	int GetBrokenBorderPromiseValue(PlayerTypes ePlayer);
-	void SetBrokenBorderPromiseValue(PlayerTypes ePlayer, int iValue);
-	void ChangeBrokenBorderPromiseValue(PlayerTypes ePlayer, int iChange);
-	int GetIgnoredBorderPromiseValue(PlayerTypes ePlayer);
-	void SetIgnoredBorderPromiseValue(PlayerTypes ePlayer, int iValue);
-	void ChangeIgnoredBorderPromiseValue(PlayerTypes ePlayer, int iChange);
-	bool EverMadeBorderPromise(PlayerTypes ePlayer);
+	PromiseStates GetPlayerBorderPromiseState(PlayerTypes ePlayer) const;
+	void SetPlayerBorderPromiseState(PlayerTypes ePlayer, PromiseStates ePromiseState);
+	bool IsPlayerMadeBorderPromise(PlayerTypes ePlayer) const;
+	bool IsPlayerIgnoredBorderPromise(PlayerTypes ePlayer) const;
+	bool IsPlayerBrokenBorderPromise(PlayerTypes ePlayer) const;
+	int GetPlayerBorderPromiseTurn(PlayerTypes ePlayer) const;
+	void SetPlayerBorderPromiseTurn(PlayerTypes ePlayer, int iTurn);
+	int GetPlayerMadeBorderPromise(PlayerTypes ePlayer) const;
+	AggressivePostureTypes GetPlayerBorderPromisePosture(PlayerTypes ePlayer) const;
+	void SetPlayerBorderPromisePosture(PlayerTypes ePlayer, AggressivePostureTypes ePosture);
+	bool EverMadeBorderPromise(PlayerTypes ePlayer) const;
 	void SetEverMadeBorderPromise(PlayerTypes ePlayer, bool bValue);
 
 	// Bully City-State Promise
+	PromiseStates GetPlayerBullyCityStatePromiseState(PlayerTypes ePlayer) const;
+	void SetPlayerBullyCityStatePromiseState(PlayerTypes ePlayer, PromiseStates ePromiseState);
+	int GetPlayerBullyCityStatePromiseTurn(PlayerTypes ePlayer) const;
+	void SetPlayerBullyCityStatePromiseTurn(PlayerTypes ePlayer, int iTurn);
 	bool IsPlayerMadeBullyCityStatePromise(PlayerTypes ePlayer) const;
-	void SetPlayerMadeBullyCityStatePromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerBrokenBullyCityStatePromise(PlayerTypes ePlayer) const;
-	void SetPlayerBrokenBullyCityStatePromise(PlayerTypes ePlayer, bool bValue);
 	bool IsPlayerIgnoredBullyCityStatePromise(PlayerTypes ePlayer) const;
-	void SetPlayerIgnoredBullyCityStatePromise(PlayerTypes ePlayer, bool bValue);
+	bool IsPlayerBrokenBullyCityStatePromise(PlayerTypes ePlayer) const;
 
 	// Attack City-State Promise
+	PromiseStates GetPlayerAttackCityStatePromiseState(PlayerTypes ePlayer) const;
+	void SetPlayerAttackCityStatePromiseState(PlayerTypes ePlayer, PromiseStates ePromiseState);
+	int GetPlayerAttackCityStatePromiseTurn(PlayerTypes ePlayer) const;
+	void SetPlayerAttackCityStatePromiseTurn(PlayerTypes ePlayer, int iTurn);
 	bool IsPlayerMadeAttackCityStatePromise(PlayerTypes ePlayer) const;
-	void SetPlayerMadeAttackCityStatePromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerBrokenAttackCityStatePromise(PlayerTypes ePlayer) const;
-	void SetPlayerBrokenAttackCityStatePromise(PlayerTypes ePlayer, bool bValue);
-	int GetBrokenAttackCityStatePromiseTurn(PlayerTypes ePlayer) const;
-	void SetBrokenAttackCityStatePromiseTurn(PlayerTypes ePlayer, int iValue);
 	bool IsPlayerIgnoredAttackCityStatePromise(PlayerTypes ePlayer) const;
-	void SetPlayerIgnoredAttackCityStatePromise(PlayerTypes ePlayer, bool bValue);
+	bool IsPlayerBrokenAttackCityStatePromise(PlayerTypes ePlayer) const;
 
 	// Spy Promise
-	bool IsPlayerStopSpyingRequestAccepted(PlayerTypes ePlayer) const;
-	void SetPlayerStopSpyingRequestAccepted(PlayerTypes ePlayer, bool bValue);
-	short GetPlayerStopSpyingRequestCounter(PlayerTypes ePlayer) const;
-	void SetPlayerStopSpyingRequestCounter(PlayerTypes ePlayer, int iValue);
-	void ChangePlayerStopSpyingRequestCounter(PlayerTypes ePlayer, int iChange);
-	bool IsStopSpyingMessageTooSoon(PlayerTypes ePlayer) const;
+	PromiseStates GetPlayerSpyPromiseState(PlayerTypes ePlayer) const;
+	void SetPlayerSpyPromiseState(PlayerTypes ePlayer, PromiseStates ePromiseState);
+	int GetPlayerSpyPromiseTurn(PlayerTypes ePlayer) const;
+	void SetPlayerSpyPromiseTurn(PlayerTypes ePlayer, int iTurn);
 	bool IsPlayerMadeSpyPromise(PlayerTypes ePlayer) const;
-	void SetPlayerMadeSpyPromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerBrokenSpyPromise(PlayerTypes ePlayer) const;
-	void SetPlayerBrokenSpyPromise(PlayerTypes ePlayer, bool bValue);
 	bool IsPlayerIgnoredSpyPromise(PlayerTypes ePlayer) const;
-	void SetPlayerIgnoredSpyPromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerStopSpyingRequestEverAsked(PlayerTypes ePlayer) const;
-	void SetPlayerStopSpyingRequestEverAsked(PlayerTypes ePlayer, bool bValue);
+	bool IsPlayerBrokenSpyPromise(PlayerTypes ePlayer) const;
+	bool IsStopSpyingMessageTooSoon(PlayerTypes ePlayer) const;
 
 	// Religious Conversion Promise
+	PromiseStates GetPlayerNoConvertPromiseState(PlayerTypes ePlayer) const;
+	void SetPlayerNoConvertPromiseState(PlayerTypes ePlayer, PromiseStates ePromiseState);
+	int GetPlayerNoConvertPromiseTurn(PlayerTypes ePlayer) const;
+	void SetPlayerNoConvertPromiseTurn(PlayerTypes ePlayer, int iTurn);
+	bool IsPlayerMadeNoConvertPromise(PlayerTypes ePlayer) const;
+	bool IsPlayerIgnoredNoConvertPromise(PlayerTypes ePlayer) const;
+	bool IsPlayerBrokenNoConvertPromise(PlayerTypes ePlayer) const;
 	bool IsPlayerAskedNotToConvert(PlayerTypes ePlayer) const;
 	void SetPlayerAskedNotToConvert(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerAgreeNotToConvert(PlayerTypes ePlayer) const;
-	void SetPlayerAgreeNotToConvert(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerMadeNoConvertPromise(PlayerTypes ePlayer) const;
-	void SetPlayerMadeNoConvertPromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerBrokenNoConvertPromise(PlayerTypes ePlayer) const;
-	void SetPlayerBrokenNoConvertPromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerIgnoredNoConvertPromise(PlayerTypes ePlayer) const;
-	void SetPlayerIgnoredNoConvertPromise(PlayerTypes ePlayer, bool bValue);
 	bool HasPlayerEverConvertedCity(PlayerTypes ePlayer) const;
 	void SetPlayerEverConvertedCity(PlayerTypes ePlayer, bool bValue);
 
 	// Digging Promise
+	PromiseStates GetPlayerNoDiggingPromiseState(PlayerTypes ePlayer) const;
+	void SetPlayerNoDiggingPromiseState(PlayerTypes ePlayer, PromiseStates ePromiseState);
+	int GetPlayerNoDiggingPromiseTurn(PlayerTypes ePlayer) const;
+	void SetPlayerNoDiggingPromiseTurn(PlayerTypes ePlayer, int iTurn);
+	bool IsPlayerMadeNoDiggingPromise(PlayerTypes ePlayer) const;
+	bool IsPlayerBrokenNoDiggingPromise(PlayerTypes ePlayer) const;
+	bool IsPlayerIgnoredNoDiggingPromise(PlayerTypes ePlayer) const;
 	bool IsPlayerAskedNotToDig(PlayerTypes ePlayer) const;
 	void SetPlayerAskedNotToDig(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerAgreeNotToDig(PlayerTypes ePlayer) const;
-	void SetPlayerAgreeNotToDig(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerMadeNoDiggingPromise(PlayerTypes ePlayer) const;
-	void SetPlayerMadeNoDiggingPromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerBrokenNoDiggingPromise(PlayerTypes ePlayer) const;
-	void SetPlayerBrokenNoDiggingPromise(PlayerTypes ePlayer, bool bValue);
-	bool IsPlayerIgnoredNoDiggingPromise(PlayerTypes ePlayer) const;
-	void SetPlayerIgnoredNoDiggingPromise(PlayerTypes ePlayer, bool bValue);
 
 	// Coop War Promise
 	bool IsPlayerBrokenCoopWarPromise(PlayerTypes ePlayer) const;
 	void SetPlayerBrokenCoopWarPromise(PlayerTypes ePlayer, bool bValue);
+	int GetPlayerBrokenCoopWarPromiseTurn(PlayerTypes ePlayer) const;
+	void SetPlayerBrokenCoopWarPromiseTurn(PlayerTypes ePlayer, int iTurn);
 
 	// ------------------------------------
 	// Event Flags
@@ -747,7 +724,7 @@ public:
 	// # of times/points counters
 	// ------------------------------------
 
-	int GetNumCitiesLiberatedBy(PlayerTypes ePlayer);
+	int GetNumCitiesLiberatedBy(PlayerTypes ePlayer) const;
 	void SetNumCitiesLiberatedBy(PlayerTypes ePlayer, int iValue);
 	void ChangeNumCitiesLiberatedBy(PlayerTypes ePlayer, int iChange);
 
@@ -833,70 +810,65 @@ public:
 	bool WasResurrectedByAnyone() const;
 
 	int GetLiberatedCitiesTurn(PlayerTypes ePlayer) const;
-	void SetLiberatedCitiesTurn(PlayerTypes ePlayer, int iChange);
+	void SetLiberatedCitiesTurn(PlayerTypes ePlayer, int iTurn);
+	bool IsCityRecentlyLiberatedBy(PlayerTypes ePlayer) const;
 
 	int GetCiviliansReturnedToMeTurn(PlayerTypes ePlayer) const;
-	void SetCiviliansReturnedToMeTurn(PlayerTypes ePlayer, int iChange);
+	void SetCiviliansReturnedToMeTurn(PlayerTypes ePlayer, int iTurn);
 
 	int GetIntrigueSharedTurn(PlayerTypes ePlayer) const;
-	void SetIntrigueSharedTurn(PlayerTypes ePlayer, int iChange);
+	void SetIntrigueSharedTurn(PlayerTypes ePlayer, int iTurn);
 
 	int GetForgaveForSpyingTurn(PlayerTypes ePlayer) const;
-	void SetForgaveForSpyingTurn(PlayerTypes ePlayer, int iChange);
+	void SetForgaveForSpyingTurn(PlayerTypes ePlayer, int iTurn);
 
 	int GetLandmarksBuiltForMeTurn(PlayerTypes ePlayer) const;
-	void SetLandmarksBuiltForMeTurn(PlayerTypes ePlayer, int iChange);
+	void SetLandmarksBuiltForMeTurn(PlayerTypes ePlayer, int iTurn);
 
 	int GetPlottedAgainstUsTurn(PlayerTypes ePlayer) const;
-	void SetPlottedAgainstUsTurn(PlayerTypes ePlayer, int iChange);
+	void SetPlottedAgainstUsTurn(PlayerTypes ePlayer, int iTurn);
 	
 	int GetPlunderedTradeRouteTurn(PlayerTypes ePlayer) const;
-	void SetPlunderedTradeRouteTurn(PlayerTypes ePlayer, int iChange);
+	void SetPlunderedTradeRouteTurn(PlayerTypes ePlayer, int iTurn);
 
-	// They sided with their Protected Minor (after we attacked/bullied it)
-	int GetTurnsSinceOtherPlayerSidedWithProtectedMinor(PlayerTypes ePlayer) const;
-	void SetOtherPlayerTurnsSinceSidedWithProtectedMinor(PlayerTypes ePlayer, int iValue);
-	void ChangeOtherPlayerTurnsSinceSidedWithProtectedMinor(PlayerTypes ePlayer, int iChange);
-	bool IsOtherPlayerSidedWithProtectedMinor(PlayerTypes ePlayer) const;
+	int GetOtherPlayerSidedWithProtectedMinorTurn(PlayerTypes ePlayer) const;
+	void SetOtherPlayerSidedWithProtectedMinorTurn(PlayerTypes ePlayer, int iTurn);
+	bool IsAngryAboutSidedWithProtectedMinor(PlayerTypes ePlayer) const;
 
-	int GetTurnsSincePlayerBulliedProtectedMinor(PlayerTypes eBullyPlayer) const;
+	int GetOtherPlayerBulliedProtectedMinorTurn(PlayerTypes ePlayer) const;
+	bool IsAngryAboutProtectedMinorBullied(PlayerTypes ePlayer) const;
 
-	int GetTurnsSincePlayerAttackedProtectedMinor(PlayerTypes ePlayer) const;
-	void SetOtherPlayerTurnsSinceAttackedProtectedMinor(PlayerTypes ePlayer, int iValue);
-	void ChangeOtherPlayerTurnsSinceAttackedProtectedMinor(PlayerTypes ePlayer, int iChange);
+	int GetOtherPlayerAttackedProtectedMinorTurn(PlayerTypes ePlayer) const;
+	void SetOtherPlayerAttackedProtectedMinorTurn(PlayerTypes ePlayer, int iTurn);
+	bool IsAngryAboutProtectedMinorAttacked(PlayerTypes ePlayer) const;
 
-	int GetTurnsSincePlayerKilledProtectedMinor(PlayerTypes ePlayer) const;
-	void SetOtherPlayerTurnsSinceKilledProtectedMinor(PlayerTypes ePlayer, int iValue);
-	void ChangeOtherPlayerTurnsSinceKilledProtectedMinor(PlayerTypes ePlayer, int iChange);
+	int GetOtherPlayerKilledProtectedMinorTurn(PlayerTypes ePlayer) const;
+	void SetOtherPlayerKilledProtectedMinorTurn(PlayerTypes ePlayer, int iTurn);
+	bool IsAngryAboutProtectedMinorKilled(PlayerTypes ePlayer) const;
 
 	int GetReligiousConversionTurn(PlayerTypes ePlayer) const;
 	void SetReligiousConversionTurn(PlayerTypes ePlayer, int iChange);
 
 	int GetRobbedTurn(PlayerTypes ePlayer) const;
 	void SetRobbedTurn(PlayerTypes ePlayer, int iChange);
-	
+
 	int GetPerformedCoupTurn(PlayerTypes ePlayer) const;
 	void SetPerformedCoupTurn(PlayerTypes ePlayer, int iChange);
 
-	int GetTurnsSinceWeLikedTheirProposal(PlayerTypes ePlayer);
-	void SetTurnsSinceWeLikedTheirProposal(PlayerTypes ePlayer, int iValue);
-	void ChangeTurnsSinceWeLikedTheirProposal(PlayerTypes ePlayer, int iChange);
+	int GetWeLikedTheirProposalTurn(PlayerTypes ePlayer);
+	void SetWeLikedTheirProposalTurn(PlayerTypes ePlayer, int iTurn);
 
-	int GetTurnsSinceWeDislikedTheirProposal(PlayerTypes ePlayer);
-	void SetTurnsSinceWeDislikedTheirProposal(PlayerTypes ePlayer, int iValue);
-	void ChangeTurnsSinceWeDislikedTheirProposal(PlayerTypes ePlayer, int iChange);
+	int GetWeDislikedTheirProposalTurn(PlayerTypes ePlayer);
+	void SetWeDislikedTheirProposalTurn(PlayerTypes ePlayer, int iTurn);
 
-	int GetTurnsSinceTheySupportedOurProposal(PlayerTypes ePlayer);
-	void SetTurnsSinceTheySupportedOurProposal(PlayerTypes ePlayer, int iValue);
-	void ChangeTurnsSinceTheySupportedOurProposal(PlayerTypes ePlayer, int iChange);
+	int GetTheySupportedOurProposalTurn(PlayerTypes ePlayer);
+	void SetTheySupportedOurProposalTurn(PlayerTypes ePlayer, int iTurn);
 
-	int GetTurnsSinceTheyFoiledOurProposal(PlayerTypes ePlayer);
-	void SetTurnsSinceTheyFoiledOurProposal(PlayerTypes ePlayer, int iValue);
-	void ChangeTurnsSinceTheyFoiledOurProposal(PlayerTypes ePlayer, int iChange);
+	int GetTheyFoiledOurProposalTurn(PlayerTypes ePlayer);
+	void SetTheyFoiledOurProposalTurn(PlayerTypes ePlayer, int iTurn);
 
-	int GetTurnsSinceTheySupportedOurHosting(PlayerTypes ePlayer);
-	void SetTurnsSinceTheySupportedOurHosting(PlayerTypes ePlayer, int iValue);
-	void ChangeTurnsSinceTheySupportedOurHosting(PlayerTypes ePlayer, int iChange);
+	int GetTheySupportedOurHostingTurn(PlayerTypes ePlayer);
+	void SetTheySupportedOurHostingTurn(PlayerTypes ePlayer, int iTurn);
 
 	// ------------------------------------
 	// Player-Specific Memory Values
@@ -942,17 +914,14 @@ public:
 	bool IsShareOpinionAccepted(PlayerTypes ePlayer) const;
 	void SetShareOpinionAccepted(PlayerTypes ePlayer, bool bValue);
 
-	short GetShareOpinionCounter(PlayerTypes ePlayer) const;
-	void SetShareOpinionCounter(PlayerTypes ePlayer, int iValue);
-	void ChangeShareOpinionCounter(PlayerTypes ePlayer, int iChange);
-	bool IsShareOpinionTooSoon(PlayerTypes ePlayer) const;
+	bool IsShareOpinionEverAsked(PlayerTypes ePlayer) const;
+	void SetShareOpinionEverAsked(PlayerTypes ePlayer, bool bValue);
 
 	bool IsPlayerMoveTroopsRequestAccepted(PlayerTypes ePlayer) const;
 	void SetPlayerMoveTroopsRequestAccepted(PlayerTypes ePlayer, bool bValue);
 
-	int GetPlayerMoveTroopsRequestCounter(PlayerTypes ePlayer) const;
-	void SetPlayerMoveTroopsRequestCounter(PlayerTypes ePlayer, int iValue);
-	void ChangePlayerMoveTroopsRequestCounter(PlayerTypes ePlayer, int iChange);
+	int GetPlayerMoveTroopsRequestAcceptedTurn(PlayerTypes ePlayer) const;
+	void SetPlayerMoveTroopsRequestAcceptedTurn(PlayerTypes ePlayer, int iTurn);
 	bool IsTooSoonForMoveTroopsRequest(PlayerTypes ePlayer) const;
 
 	bool IsOfferingGift(PlayerTypes ePlayer) const;	// We're offering a gift!
@@ -961,17 +930,15 @@ public:
 	bool IsOfferedGift(PlayerTypes ePlayer) const;	// We offered a gift!
 	void SetOfferedGift(PlayerTypes ePlayer, bool bValue);
 
-	bool IsHelpRequestEverMade(PlayerTypes ePlayer) const;
-	void SetHelpRequestEverMade(PlayerTypes ePlayer, bool bValue);
+	int GetHelpRequestAcceptedTurn(PlayerTypes ePlayer) const;
+	void SetHelpRequestAcceptedTurn(PlayerTypes ePlayer, int iTurn);
 
-	short GetHelpRequestCounter(PlayerTypes ePlayer) const;
-	void SetHelpRequestCounter(PlayerTypes ePlayer, int iValue);
-	void ChangeHelpRequestCounter(PlayerTypes ePlayer, int iChange);
-
-	short GetHelpRequestTooSoonNumTurns(PlayerTypes ePlayer) const;
+	int GetHelpRequestTooSoonNumTurns(PlayerTypes ePlayer) const;
+	void SetHelpRequestTooSoonNumTurns(PlayerTypes ePlayer, int iValue);
 	bool IsHelpRequestTooSoon(PlayerTypes ePlayer) const;
 
 	bool IsHasPaidTributeTo(PlayerTypes ePlayer) const;
+	void SetHasPaidTributeTo(PlayerTypes ePlayer, bool bValue);
 
 	int GetNumTimesDemandedWhileVassal(PlayerTypes ePlayer) const;
 	void SetNumTimesDemandedWhileVassal(PlayerTypes ePlayer, int iValue);
@@ -988,19 +955,17 @@ public:
 	bool IsMasterLiberatedMeFromVassalage(PlayerTypes ePlayer) const;
 	void SetMasterLiberatedMeFromVassalage(PlayerTypes ePlayer, bool bValue);
 
-	int GetTurnsSinceVassalagePeacefullyRevoked(PlayerTypes ePlayer) const;
-	void SetTurnsSinceVassalagePeacefullyRevoked(PlayerTypes ePlayer, int iValue);
-	void ChangeTurnsSinceVassalagePeacefullyRevoked(PlayerTypes ePlayer, int iChange);
+	int GetVassalagePeacefullyRevokedTurn(PlayerTypes ePlayer) const;
+	void SetVassalagePeacefullyRevokedTurn(PlayerTypes ePlayer, int iValue);
 
-	int GetTurnsSinceVassalageForcefullyRevoked(PlayerTypes ePlayer) const;
-	void SetTurnsSinceVassalageForcefullyRevoked(PlayerTypes ePlayer, int iValue);
-	void ChangeTurnsSinceVassalageForcefullyRevoked(PlayerTypes ePlayer, int iChange);
+	int GetVassalageForcefullyRevokedTurn(PlayerTypes ePlayer) const;
+	void SetVassalageForcefullyRevokedTurn(PlayerTypes ePlayer, int iValue);
 
 	bool IsPlayerBrokenVassalAgreement(PlayerTypes ePlayer) const;
 	void SetPlayerBrokenVassalAgreement(PlayerTypes ePlayer, bool bValue);
 
 	int GetPlayerBrokenVassalAgreementTurn(PlayerTypes ePlayer) const;
-	void SetPlayerBrokenVassalAgreementTurn(PlayerTypes ePlayer, int iValue);
+	void SetPlayerBrokenVassalAgreementTurn(PlayerTypes ePlayer, int iTurn);
 
 	bool IsVassalTaxRaised(PlayerTypes ePlayer) const;
 	void SetVassalTaxRaised(PlayerTypes ePlayer, bool bValue);
@@ -1144,9 +1109,13 @@ public:
 	void DoUpdateOnePlayerTargetValue(PlayerTypes ePlayer);
 	
 	// War Sanity Checks: What would we lose if we went to war?
-	int CalculateGoldPerTurnLostFromWar(PlayerTypes ePlayer, bool bOtherPlayerEstimate, bool bIgnoreDPs);
-	bool IsWarWouldBackstabFriend(PlayerTypes ePlayer);
-	bool IsWarWouldBackstabFriendTeamCheck(PlayerTypes ePlayer);
+	int CalculateGoldPerTurnLostFromWar(PlayerTypes ePlayer, bool bIgnoreDPs);
+	bool IsWarWouldBankruptUs(PlayerTypes ePlayer, bool bIgnoreDPs, int iMinimumIncome = 0);
+
+	bool IsSaneDiplomaticWar(PlayerTypes ePlayer, bool bImpulse);
+	bool CanBackstab(PlayerTypes ePlayer) const;
+	bool IsWillingToAttackFriend(PlayerTypes ePlayer, bool bDirect, bool bImpulse);
+	bool WouldBeUpsetIfAttackedFriend(PlayerTypes ePlayer, PlayerTypes eBackstabPlayer) const;
 
 	void DoUpdateWarDamageLevels();
 	void DoWarDamageDecay();
@@ -1203,10 +1172,6 @@ public:
 	bool IsPlayerWonderSpammer(PlayerTypes ePlayer);
 
 	bool IsNukedBy(PlayerTypes ePlayer) const;
-	bool IsAngryAboutProtectedMinorKilled(PlayerTypes ePlayer) const;
-	bool IsAngryAboutProtectedMinorAttacked(PlayerTypes ePlayer) const;
-	bool IsAngryAboutProtectedMinorBullied(PlayerTypes ePlayer) const;
-	bool IsAngryAboutSidedWithTheirProtectedMinor(PlayerTypes ePlayer) const;
 
 	// Expansion Aggressive Posture: How aggressively has ePlayer positioned their Units in relation to us?
 	void DoUpdateExpansionAggressivePostures();
@@ -1219,7 +1184,8 @@ public:
 	void DoUpdateVictoryBlockLevels();
 
 	void DoRelationshipPairing();
-	
+
+	bool IsFriendOrAlly(PlayerTypes ePlayer) const;
 	bool IsStrategicTradePartner(PlayerTypes ePlayer) const;
 	bool IsMajorCompetitor(PlayerTypes ePlayer) const;
 	bool IsEarlyGameCompetitor(PlayerTypes ePlayer);
@@ -1431,7 +1397,7 @@ public:
 	void CancelAllCoopWars();
 
 	// Human Demand
-	void DoDemandMade(PlayerTypes ePlayer, DemandResponseTypes eDemand);
+	void DoDemandMade(PlayerTypes ePlayer, DemandResponseTypes eResponse);
 
 	// No Settling
 	bool IsDontSettleAcceptable(PlayerTypes ePlayer) const;
@@ -1476,8 +1442,10 @@ public:
 	PlayerTypes GetRequestFriendToDenounce(PlayerTypes ePlayer, bool& bRandFailed);
 	bool IsFriendDenounceRefusalUnacceptable(PlayerTypes ePlayer, PlayerTypes eAgainstPlayer);
 
+	void DoTestBackstabbingPenalties();
 	void DoTestUntrustworthyFriends();
 	bool DoTestOnePlayerUntrustworthyFriend(PlayerTypes ePlayer);
+	void DoUpdateUntrustworthyPlayers();
 
 #if defined(MOD_DIPLOMACY_CIV4_FEATURES)
 	// Contact Statements
@@ -1522,8 +1490,8 @@ public:
 	int GetMasterLiberatedMeFromVassalageScore(PlayerTypes ePlayer) const;
 
 	int GetVassalProtectScore(PlayerTypes ePlayer) const;
-	int GetHappyAboutVassalagePeacefullyRevokedScore(PlayerTypes ePlayer) const;
-	int GetAngryAboutVassalageForcefullyRevokedScore(PlayerTypes ePlayer) const;
+	int GetHappyAboutVassalagePeacefullyRevokedScore(PlayerTypes ePlayer);
+	int GetAngryAboutVassalageForcefullyRevokedScore(PlayerTypes ePlayer);
 
 	int GetTooManyVassalsScore(PlayerTypes ePlayer) const;
 	int GetSameMasterScore(PlayerTypes ePlayer) const;
@@ -1580,6 +1548,9 @@ public:
 	/////////////////////////////////////////////////////////
 	// Opinion modifiers
 	/////////////////////////////////////////////////////////
+	int AdjustModifierDuration(bool bGood, int iDuration, int iFlavorValue = 0, bool bGamespeed = true);
+	int AdjustModifierValue(int iValue, int iDuration, int iTurn, ModifierTypes eModifierType, int iStacks = 1, int iFirstStackValue = 0);
+	void DoTestOpinionModifiers();
 	int GetBaseOpinionScore(PlayerTypes ePlayer);
 	int GetLandDisputeLevelScore(PlayerTypes ePlayer);
 	int GetWonderDisputeLevelScore(PlayerTypes ePlayer);
@@ -1610,6 +1581,7 @@ public:
 	int GetTimesIntrigueSharedScore(PlayerTypes ePlayer);
 	int GetBrokenMilitaryPromiseScore(PlayerTypes ePlayer);
 	int GetBrokenMilitaryPromiseWithAnybodyScore(PlayerTypes ePlayer);
+	int GetIgnoredMilitaryPromiseScore(PlayerTypes ePlayer);
 	int GetBrokenExpansionPromiseScore(PlayerTypes ePlayer);
 	int GetIgnoredExpansionPromiseScore(PlayerTypes ePlayer);
 	int GetBrokenBorderPromiseScore(PlayerTypes ePlayer);
@@ -1852,25 +1824,14 @@ private:
 		DeclarationLogData m_aDeclarationsLog[MAX_DIPLO_LOG_STATEMENTS];
 
 		// Things a player has told the AI
-
-		bool m_abPlayerNoSettleRequest[MAX_MAJOR_CIVS];
-		short m_aiPlayerNoSettleRequestCounter[MAX_MAJOR_CIVS];
-
-		bool m_abPlayerStopSpyingRequest[MAX_MAJOR_CIVS];
-		short m_aiPlayerStopSpyingRequestCounter[MAX_MAJOR_CIVS];
-		short m_aiPlayerBackstabCounter[MAX_MAJOR_CIVS];
-
 		short m_aiDefensivePactValue[MAX_MAJOR_CIVS];
 		short m_aiDoFValue[MAX_MAJOR_CIVS];
 		short m_aiCompetitorValue[MAX_MAJOR_CIVS];
 		char m_aiCoopWarScore[MAX_MAJOR_CIVS];
 
-		short m_aiDemandCounter[MAX_MAJOR_CIVS];
 		short m_aiDemandTooSoonNumTurns[MAX_MAJOR_CIVS];
 
-		bool m_abDoFBroken[MAX_MAJOR_CIVS];
 		char m_aeDoFType[MAX_MAJOR_CIVS];
-		short m_aiBrokenAttackCityStatePromiseTurn[MAX_MAJOR_CIVS];
 		short m_aiDoFBrokenTurn[MAX_MAJOR_CIVS];
 		bool m_abEverBackstabbedBy[MAX_MAJOR_CIVS];
 		short m_aiFriendDenouncedUsTurn[MAX_MAJOR_CIVS];
@@ -1880,13 +1841,12 @@ private:
 
 		short m_aiDoFAcceptedTurn[MAX_MAJOR_CIVS];
 
+		bool m_abUntrustworthy[MAX_MAJOR_CIVS];
 		bool m_abUntrustworthyFriend[MAX_MAJOR_CIVS];
-		bool m_abFriendDenouncedUs[MAX_MAJOR_CIVS];
 #if defined(MOD_DIPLOMACY_CIV4_FEATURES)
 		bool m_abOfferingGift[MAX_MAJOR_CIVS];
 		bool m_abOfferedGift[MAX_MAJOR_CIVS];
 #endif
-		bool m_abFriendDeclaredWarOnUs[MAX_MAJOR_CIVS];
 		short m_aiDenouncedPlayerTurn[MAX_MAJOR_CIVS];
 
 		short m_aiNumCiviliansReturnedToMe[MAX_MAJOR_CIVS];
@@ -1902,14 +1862,11 @@ private:
 		bool m_abPlayerEverMadeBorderPromise[MAX_MAJOR_CIVS];
 		bool m_abPlayerEverMadeExpansionPromise[MAX_MAJOR_CIVS];
 		bool m_abDoFEverAsked[MAX_MAJOR_CIVS];
-		bool m_abHelpRequestEverMade[MAX_MAJOR_CIVS];
 		int m_aiDemandEverMade[MAX_MAJOR_CIVS];
 		short m_aiDemandMadeTurn[MAX_MAJOR_CIVS];
 		int m_aiArtifactsEverDugUp[MAX_MAJOR_CIVS];
 		bool m_abEverConvertedCity[MAX_MAJOR_CIVS];
-		bool m_abPlayerNoSettleRequestEverAsked[MAX_MAJOR_CIVS];
-		bool m_abPlayerStopSpyingRequestEverAsked[MAX_MAJOR_CIVS];
-		short m_aiNumLandmarksBuiltForMeTurn[MAX_MAJOR_CIVS];
+		short m_aiLandmarksBuiltForMeTurn[MAX_MAJOR_CIVS];
 		short m_aiCiviliansReturnedToMeTurn[MAX_MAJOR_CIVS];
 		short m_aiWarDamageValue[MAX_MAJOR_CIVS];
 		short m_aiPlayerForgaveForSpyingTurn[MAX_MAJOR_CIVS];
@@ -1924,11 +1881,6 @@ private:
 		short m_aiNumTimesRobbedBy[MAX_MAJOR_CIVS];
 		short m_aiNumTimesIntrigueSharedBy[MAX_MAJOR_CIVS];
 
-		short m_aiBrokenExpansionPromiseValue[MAX_MAJOR_CIVS];
-		short m_aiIgnoredExpansionPromiseValue[MAX_MAJOR_CIVS];
-		short m_aiBrokenBorderPromiseValue[MAX_MAJOR_CIVS];
-		short m_aiIgnoredBorderPromiseValue[MAX_MAJOR_CIVS];
-
 		bool m_abPlayerLiberatedCapital[MAX_MAJOR_CIVS];
 		bool m_abPlayerCapturedCapital[MAX_MAJOR_CIVS];
 		bool m_abPlayerCapturedHolyCity[MAX_MAJOR_CIVS];
@@ -1942,70 +1894,59 @@ private:
 		char m_aePlayerMilitaryPromiseState[MAX_MAJOR_CIVS];
 		short m_aiPlayerMilitaryPromiseTurn[MAX_MAJOR_CIVS];
 
-		short m_aiPlayerMadeExpansionPromiseTurn[MAX_MAJOR_CIVS];
-		bool m_abPlayerBrokenExpansionPromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerIgnoredExpansionPromise[MAX_MAJOR_CIVS];
-		char m_aePlayerExpansionPromiseData[MAX_MAJOR_CIVS];
+		char m_aePlayerExpansionPromiseState[MAX_MAJOR_CIVS];
+		char m_aePlayerExpansionPromisePosture[MAX_MAJOR_CIVS];
+		short m_aiPlayerExpansionPromiseTurn[MAX_MAJOR_CIVS];
 
-		short m_aiPlayerMadeBorderPromiseTurn[MAX_MAJOR_CIVS];
-		bool m_abPlayerBrokenBorderPromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerIgnoredBorderPromise[MAX_MAJOR_CIVS];
-		char m_aePlayerBorderPromiseData[MAX_MAJOR_CIVS];
+		char m_aePlayerBorderPromiseState[MAX_MAJOR_CIVS];
+		char m_aePlayerBorderPromisePosture[MAX_MAJOR_CIVS];
+		short m_aiPlayerBorderPromiseTurn[MAX_MAJOR_CIVS];
 
-		bool m_abPlayerMadeAttackCityStatePromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerBrokenAttackCityStatePromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerIgnoredAttackCityStatePromise[MAX_MAJOR_CIVS];
+		char m_aePlayerBullyCityStatePromiseState[MAX_MAJOR_CIVS];
+		short m_aiPlayerBullyCityStatePromiseTurn[MAX_MAJOR_CIVS];
 
-		bool m_abPlayerMadeBullyCityStatePromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerBrokenBullyCityStatePromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerIgnoredBullyCityStatePromise[MAX_MAJOR_CIVS];
+		char m_aePlayerAttackCityStatePromiseState[MAX_MAJOR_CIVS];
+		short m_aiPlayerAttackCityStatePromiseTurn[MAX_MAJOR_CIVS];
 
-		bool m_abPlayerMadeSpyPromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerBrokenSpyPromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerIgnoredSpyPromise[MAX_MAJOR_CIVS];
+		char m_aePlayerSpyPromiseState[MAX_MAJOR_CIVS];
+		short m_aiPlayerSpyPromiseTurn[MAX_MAJOR_CIVS];
 
-		bool m_abPlayerForgaveForSpying[MAX_MAJOR_CIVS];
-
-		bool m_abPlayerMadeNoConvertPromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerBrokenNoConvertPromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerIgnoredNoConvertPromise[MAX_MAJOR_CIVS];
+		char m_aePlayerNoConvertPromiseState[MAX_MAJOR_CIVS];
+		short m_aiPlayerNoConvertPromiseTurn[MAX_MAJOR_CIVS];
 		bool m_abPlayerAskedNotToConvert[MAX_MAJOR_CIVS];
-		bool m_abPlayerAgreedNotToConvert[MAX_MAJOR_CIVS];
 
-		bool m_abPlayerMadeNoDiggingPromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerBrokenNoDiggingPromise[MAX_MAJOR_CIVS];
-		bool m_abPlayerIgnoredNoDiggingPromise[MAX_MAJOR_CIVS];
+		char m_aePlayerNoDiggingPromiseState[MAX_MAJOR_CIVS];
+		short m_aiPlayerNoDiggingPromiseTurn[MAX_MAJOR_CIVS];
 		bool m_abPlayerAskedNotToDig[MAX_MAJOR_CIVS];
-		bool m_abPlayerAgreedNotToDig[MAX_MAJOR_CIVS];
 
-		bool m_abPlayerBrokenCoopWarPromise[MAX_MAJOR_CIVS];
+		short m_aiPlayerBrokenCoopWarPromiseTurn[MAX_MAJOR_CIVS];
 
 		// Evaluation of Other Players' Tendencies
-		short m_aiOtherPlayerTurnsSinceAttackedProtectedMinor[MAX_MAJOR_CIVS];
-		char m_aiOtherPlayerProtectedMinorAttacked[MAX_MAJOR_CIVS];
-		char m_aiOtherPlayerNumProtectedMinorsAttacked[MAX_MAJOR_CIVS];
-		short m_aiOtherPlayerTurnsSinceKilledProtectedMinor[MAX_MAJOR_CIVS];
-		char m_aiOtherPlayerProtectedMinorKilled[MAX_MAJOR_CIVS];
-		char m_aiOtherPlayerNumProtectedMinorsKilled[MAX_MAJOR_CIVS];
-		char m_aiOtherPlayerNumProtectedMinorsBullied[MAX_MAJOR_CIVS];
+		short m_aiAttackedProtectedMinorTurn[MAX_MAJOR_CIVS];
+		char m_aeProtectedMinorAttacked[MAX_MAJOR_CIVS];
+		char m_aiNumProtectedMinorsAttacked[MAX_MAJOR_CIVS];
+		short m_aiKilledProtectedMinorTurn[MAX_MAJOR_CIVS];
+		char m_aeProtectedMinorKilled[MAX_MAJOR_CIVS];
+		char m_aiNumProtectedMinorsKilled[MAX_MAJOR_CIVS];
+		char m_aiNumProtectedMinorsBullied[MAX_MAJOR_CIVS];
 
-		short m_aiOtherPlayerTurnsSinceSidedWithTheirProtectedMinor[MAX_MAJOR_CIVS];
+		short m_aiSidedWithProtectedMinorTurn[MAX_MAJOR_CIVS];
 		
-		char m_aiOtherPlayerNumMinorsAttacked[MAX_MAJOR_CIVS];
-		char m_aiOtherPlayerNumMinorsConquered[MAX_MAJOR_CIVS];
-		char m_aiOtherPlayerNumMajorsAttacked[MAX_MAJOR_CIVS];
-		char m_aiOtherPlayerNumMajorsConquered[MAX_MAJOR_CIVS];
-		int m_aiOtherPlayerWarmongerAmountTimes100[MAX_MAJOR_CIVS];
+		char m_aiNumMinorsAttacked[MAX_MAJOR_CIVS];
+		char m_aiNumMinorsConquered[MAX_MAJOR_CIVS];
+		char m_aiNumMajorsAttacked[MAX_MAJOR_CIVS];
+		char m_aiNumMajorsConquered[MAX_MAJOR_CIVS];
+		int m_aiWarmongerAmountTimes100[MAX_MAJOR_CIVS];
 
 		char m_aiTheyPlottedAgainstUs[MAX_MAJOR_CIVS];
 		char m_aiTheyLoweredOurInfluence[MAX_MAJOR_CIVS];
 		char m_aiPerformedCoupAgainstUs[MAX_MAJOR_CIVS];
 
-		short m_aiOtherPlayerTurnsSinceWeLikedTheirProposal[MAX_MAJOR_CIVS];
-		short m_aiOtherPlayerTurnsSinceWeDislikedTheirProposal[MAX_MAJOR_CIVS];
-		short m_aiOtherPlayerTurnsSinceTheySupportedOurProposal[MAX_MAJOR_CIVS];
-		short m_aiOtherPlayerTurnsSinceTheyFoiledOurProposal[MAX_MAJOR_CIVS];
-		short m_aiOtherPlayerTurnsSinceTheySupportedOurHosting[MAX_MAJOR_CIVS];
+		short m_aiWeLikedTheirProposalTurn[MAX_MAJOR_CIVS];
+		short m_aiWeDislikedTheirProposalTurn[MAX_MAJOR_CIVS];
+		short m_aiTheySupportedOurProposalTurn[MAX_MAJOR_CIVS];
+		short m_aiTheyFoiledOurProposalTurn[MAX_MAJOR_CIVS];
+		short m_aiTheySupportedOurHostingTurn[MAX_MAJOR_CIVS];
 
 		//2D Arrays
 		int* m_apaeApproachValues[MAX_MAJOR_CIVS];
@@ -2034,23 +1975,21 @@ private:
 #endif
 #if defined(MOD_DIPLOMACY_CIV4_FEATURES)
 		bool m_abShareOpinionAccepted[MAX_MAJOR_CIVS];
-		short m_aiShareOpinionCounter[MAX_MAJOR_CIVS];
+		bool m_abShareOpinionEverAsked[MAX_MAJOR_CIVS];
 
-		short m_aiHelpRequestCounter[MAX_MAJOR_CIVS];
+		short m_aiHelpRequestAcceptedTurn[MAX_MAJOR_CIVS];
 		short m_aiHelpRequestTooSoonNumTurns[MAX_MAJOR_CIVS];
 
 		short m_aiNumTimesDemandedWhenVassal[MAX_MAJOR_CIVS];
 		bool m_abDemandAcceptedWhenVassal[MAX_MAJOR_CIVS];
-		bool m_abPlayerBrokenVassalAgreement[MAX_MAJOR_CIVS];
 		short m_aiBrokenVassalAgreementTurn[MAX_MAJOR_CIVS];
 
 		short m_aiPlayerVassalageFailedProtectValue[MAX_MAJOR_CIVS];
 		short m_aiPlayerVassalageProtectValue[MAX_MAJOR_CIVS];
-		short m_aiPlayerVassalageTurnsSincePeacefullyRevokedVassalage[MAX_MAJOR_CIVS];
-		short m_aiPlayerVassalageTurnsSinceForcefullyRevokedVassalage[MAX_MAJOR_CIVS];
+		short m_aiPlayerVassalagePeacefullyRevokedTurn[MAX_MAJOR_CIVS];
+		short m_aiPlayerVassalageForcefullyRevokedTurn[MAX_MAJOR_CIVS];
 
-		bool m_abMoveTroopsRequestAccepted[MAX_MAJOR_CIVS];
-		short m_aiMoveTroopsRequestCounter[MAX_MAJOR_CIVS];
+		short m_aiMoveTroopsRequestAcceptedTurn[MAX_MAJOR_CIVS];
 		
 		bool m_abMasterLiberatedMeFromVassalage[MAX_MAJOR_CIVS];
 
@@ -2065,24 +2004,22 @@ private:
 
 #if defined(MOD_DIPLOMACY_CIV4_FEATURES)
 	bool* m_pabShareOpinionAccepted;
-	short* m_paiShareOpinionCounter;
+	bool* m_pabShareOpinionEverAsked;
 
-	short* m_paiHelpRequestCounter;
+	short* m_paiHelpRequestAcceptedTurn;
 	short* m_paiHelpRequestTooSoonNumTurns;
 
 	short* m_paiPlayerVassalageFailedProtectValue;
 	short* m_paiPlayerVassalageProtectValue;
 
-	short* m_paiPlayerVassalageTurnsSincePeacefullyRevokedVassalage;
-	short* m_paiPlayerVassalageTurnsSinceForcefullyRevokedVassalage;
+	short* m_paiPlayerVassalagePeacefullyRevokedTurn;
+	short* m_paiPlayerVassalageForcefullyRevokedTurn;
 
 	short* m_paiNumTimesDemandedWhenVassal;
 	bool* m_pabDemandAcceptedWhenVassal;
-	bool* m_pabPlayerBrokenVassalAgreement;
 	short* m_paiBrokenVassalAgreementTurn;
 
-	bool* m_pabMoveTroopsRequestAccepted;
-	short* m_paiMoveTroopsRequestCounter;
+	short* m_paiMoveTroopsRequestAcceptedTurn;
 
 	bool* m_pabMasterLiberatedMeFromVassalage;
 
@@ -2108,6 +2045,8 @@ private:
 	char* m_paeApproachTowardsUsGuessCounter;
 
 	char m_eDiploPersonalityType;
+
+	bool m_bBackstabber;
 
 	char m_eDemandTargetPlayer;
 	bool m_bDemandReady;
@@ -2181,21 +2120,9 @@ private:
 	char* m_paeWarmongerThreat;
 
 	// Things a player has told the AI
-
-	bool* m_pabPlayerNoSettleRequestAccepted;
-	short* m_paiPlayerNoSettleRequestCounter;
-
-	bool* m_pabPlayerStopSpyingRequestAccepted;
-	short* m_paiPlayerStopSpyingRequestCounter;
-
-	short* m_paiPlayerBackstabCounter;
-
-	short* m_paiDemandCounter;
 	short* m_paiDemandTooSoonNumTurns;
 
-	bool* m_pabDoFBroken;
 	char* m_paeDoFType;
-	short* m_paiBrokenAttackCityStatePromiseTurn;
 	short* m_paiDoFBrokenTurn;
 	bool* m_pabEverBackstabbedBy;
 	short* m_paiFriendDenouncedUsTurn;
@@ -2205,9 +2132,8 @@ private:
 
 	short* m_paiDoFAcceptedTurn;
 
+	bool* m_pabUntrustworthy;
 	bool* m_pabUntrustworthyFriend;
-	bool* m_pabFriendDenouncedUs;
-	bool* m_pabFriendDeclaredWarOnUs;
 	short* m_paiDenouncedPlayerTurn;
 #if defined(MOD_DIPLOMACY_CIV4_FEATURES)
 	bool* m_pabOfferingGift;
@@ -2225,7 +2151,7 @@ private:
 	short* m_paiNumTimesRazed;
 	short* m_paiNumTradeRoutesPlundered;
 	short* m_paiDemandMadeTurn;
-	short* m_paiNumLandmarksBuiltForMeTurn;
+	short* m_paiLandmarksBuiltForMeTurn;
 	short* m_paiCiviliansReturnedToMeTurn;
 	short* m_paiPlayerForgaveForSpyingTurn;
 	short* m_paiLiberatedCitiesTurn;
@@ -2239,10 +2165,6 @@ private:
 	short* m_paiNumTimesRobbedBy;
 	short* m_paiNumTimesIntrigueSharedBy;
 
-	short* m_paiBrokenExpansionPromiseValue;
-	short* m_paiIgnoredExpansionPromiseValue;
-	short* m_paiBrokenBorderPromiseValue;
-	short* m_paiIgnoredBorderPromiseValue;
 	short* m_paiTradeValue;
 	short* m_paiCommonFoeValue;
 	short* m_paiAssistValue;
@@ -2259,52 +2181,39 @@ private:
 	char* m_paePlayerMilitaryPromiseState;
 	short* m_paiPlayerMilitaryPromiseTurn;
 
-	short* m_paiPlayerMadeExpansionPromiseTurn;
-	bool* m_pabPlayerBrokenExpansionPromise;
-	bool* m_pabPlayerIgnoredExpansionPromise;
-	char* m_paePlayerExpansionPromiseData;
+	char* m_paePlayerExpansionPromiseState;
+	char* m_paePlayerExpansionPromisePosture;
+	short* m_paiPlayerExpansionPromiseTurn;
 
-	short* m_paiPlayerMadeBorderPromiseTurn;
-	bool* m_pabPlayerBrokenBorderPromise;
-	bool* m_pabPlayerIgnoredBorderPromise;
-	char* m_paePlayerBorderPromiseData;
+	char* m_paePlayerBorderPromiseState;
+	char* m_paePlayerBorderPromisePosture;
+	short* m_paiPlayerBorderPromiseTurn;
+
 	bool* m_pabPlayerEverMadeBorderPromise;
 	bool* m_pabPlayerEverMadeExpansionPromise;
 	bool* m_pabDoFEverAsked;
-	bool* m_pabHelpRequestEverMade;
 	int*  m_paiDemandEverMade;
 	int*  m_paiArtifactsEverDugUp;
 	bool* m_pabEverConvertedCity;
-	bool* m_pabPlayerNoSettleRequestEverAsked;
-	bool* m_pabPlayerStopSpyingRequestEverAsked;
 
-	bool* m_pabPlayerMadeAttackCityStatePromise;
-	bool* m_pabPlayerBrokenAttackCityStatePromise;
-	bool* m_pabPlayerIgnoredAttackCityStatePromise;
+	char* m_paePlayerBullyCityStatePromiseState;
+	short* m_paiPlayerBullyCityStatePromiseTurn;
 
-	bool* m_pabPlayerMadeBullyCityStatePromise;
-	bool* m_pabPlayerBrokenBullyCityStatePromise;
-	bool* m_pabPlayerIgnoredBullyCityStatePromise;
+	char* m_paePlayerAttackCityStatePromiseState;
+	short* m_paiPlayerAttackCityStatePromiseTurn;
 
-	bool* m_pabPlayerMadeSpyPromise;
-	bool* m_pabPlayerBrokenSpyPromise;
-	bool* m_pabPlayerIgnoredSpyPromise;
+	char* m_paePlayerSpyPromiseState;
+	short* m_paiPlayerSpyPromiseTurn;
 
-	bool* m_pabPlayerForgaveForSpying;
-
-	bool* m_pabPlayerMadeNoConvertPromise;
-	bool* m_pabPlayerBrokenNoConvertPromise;
-	bool* m_pabPlayerIgnoredNoConvertPromise;
+	char* m_paePlayerNoConvertPromiseState;
+	short* m_paiPlayerNoConvertPromiseTurn;
 	bool* m_pabPlayerAskedNotToConvert;
-	bool* m_pabPlayerAgreedNotToConvert;
 
-	bool* m_pabPlayerMadeNoDiggingPromise;
-	bool* m_pabPlayerBrokenNoDiggingPromise;
-	bool* m_pabPlayerIgnoredNoDiggingPromise;
+	char* m_paePlayerNoDiggingPromiseState;
+	short* m_paiPlayerNoDiggingPromiseTurn;
 	bool* m_pabPlayerAskedNotToDig;
-	bool* m_pabPlayerAgreedNotToDig;
 
-	bool* m_pabPlayerBrokenCoopWarPromise;
+	short* m_paiPlayerBrokenCoopWarPromiseTurn;
 
 	// Personality Members
 
@@ -2327,33 +2236,33 @@ private:
 
 	// Evaluation of Other Players' Tendencies
 
-	short* m_paiOtherPlayerTurnsSinceAttackedProtectedMinor;
-	char* m_paiOtherPlayerProtectedMinorAttacked;
-	char* m_paiOtherPlayerNumProtectedMinorsAttacked;
+	short* m_paiAttackedProtectedMinorTurn;
+	char* m_paeProtectedMinorAttacked;
+	char* m_paiNumProtectedMinorsAttacked;
 
-	short* m_paiOtherPlayerTurnsSinceKilledProtectedMinor;
-	char* m_paiOtherPlayerProtectedMinorKilled;
-	char* m_paiOtherPlayerNumProtectedMinorsKilled;
+	short* m_paiKilledProtectedMinorTurn;
+	char* m_paeProtectedMinorKilled;
+	char* m_paiNumProtectedMinorsKilled;
 
-	char* m_paiOtherPlayerNumProtectedMinorsBullied;
+	char* m_paiNumProtectedMinorsBullied;
 
-	short* m_paiOtherPlayerTurnsSinceSidedWithTheirProtectedMinor;
+	short* m_paiSidedWithProtectedMinorTurn;
 
-	char* m_paiOtherPlayerNumMinorsAttacked;
-	char* m_paiOtherPlayerNumMinorsConquered;
-	char* m_paiOtherPlayerNumMajorsAttacked;
-	char* m_paiOtherPlayerNumMajorsConquered;
-	int* m_paiOtherPlayerWarmongerAmountTimes100;
+	char* m_paiNumMinorsAttacked;
+	char* m_paiNumMinorsConquered;
+	char* m_paiNumMajorsAttacked;
+	char* m_paiNumMajorsConquered;
+	int* m_paiWarmongerAmountTimes100;
 
 	char* m_paiTheyPlottedAgainstUs;
 	char* m_paiTheyLoweredOurInfluence;
 	char* m_paiPerformedCoupAgainstUs;
 
-	short* m_paiOtherPlayerTurnsSinceWeLikedTheirProposal;
-	short* m_paiOtherPlayerTurnsSinceWeDislikedTheirProposal;
-	short* m_paiOtherPlayerTurnsSinceTheySupportedOurProposal;
-	short* m_paiOtherPlayerTurnsSinceTheyFoiledOurProposal;
-	short* m_paiOtherPlayerTurnsSinceTheySupportedOurHosting;
+	short* m_paiWeLikedTheirProposalTurn;
+	short* m_paiWeDislikedTheirProposalTurn;
+	short* m_paiTheySupportedOurProposalTurn;
+	short* m_paiTheyFoiledOurProposalTurn;
+	short* m_paiTheySupportedOurHostingTurn;
 
 	// Memory of what we've talked about with people
 	DiploLogData** m_ppaDiploStatementsLog;

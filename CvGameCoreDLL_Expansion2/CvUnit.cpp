@@ -13019,6 +13019,9 @@ void CvUnit::PerformCultureBomb(int iRadius)
 			if (pPlayer->isBarbarian())
 				continue;
 
+			if (!pPlayer->isAlive())
+				continue;
+
 			// Minor civ response
 			if (pPlayer->isMinorCiv())
 			{

@@ -1622,7 +1622,7 @@ void CvActiveResolution::DoEffects(PlayerTypes ePlayer)
 		CvAssertMsg(eTargetPlayer != NO_PLAYER, "Making an embargo on NO_PLAYER. Please send Anton your save file and version.");
 		// Refresh trade routes
 		GC.getGame().GetGameTrade()->ClearAllCivTradeRoutes(eTargetPlayer, true);
-		GET_PLAYER(eTargetPlayer).GetCorporations()->ClearCorporationFromForeignCities(false, true);
+		GET_PLAYER(eTargetPlayer).GetCorporations()->ClearCorporationFromForeignCities(false, true, true);
 
 		CvCity* pLoopCity;
 		int iLoop;
@@ -2771,14 +2771,16 @@ void CvLeague::DoProposeEnact(ResolutionTypes eResolution, PlayerTypes eProposer
 		{
 			CvAssert((*it) != NO_PLAYER);
 			CvAssert(CanEverVote(*it));
-			GET_PLAYER(*it).GetDiplomacyAI()->SetTurnsSinceWeLikedTheirProposal(eProposer, 0);
+			GET_PLAYER(*it).GetDiplomacyAI()->SetWeLikedTheirProposalTurn(eProposer, GC.getGame().getGameTurn());
+			GET_PLAYER(*it).GetDiplomacyAI()->SetWeDislikedTheirProposalTurn(eProposer, -1);
 		}
 		LeagueHelpers::PlayerList vDislikers = GetMembersThatDislikeProposal(eResolution, eProposer, iChoice);
 		for (LeagueHelpers::PlayerList::iterator it = vDislikers.begin(); it != vDislikers.end(); ++it)
 		{
 			CvAssert((*it) != NO_PLAYER);
 			CvAssert(CanEverVote(*it));
-			GET_PLAYER(*it).GetDiplomacyAI()->SetTurnsSinceWeDislikedTheirProposal(eProposer, 0);
+			GET_PLAYER(*it).GetDiplomacyAI()->SetWeDislikedTheirProposalTurn(eProposer, GC.getGame().getGameTurn());
+			GET_PLAYER(*it).GetDiplomacyAI()->SetWeLikedTheirProposalTurn(eProposer, -1);
 		}
 	}
 	
@@ -2819,14 +2821,16 @@ void CvLeague::DoProposeRepeal(int iResolutionID, PlayerTypes eProposer)
 				{
 					CvAssert((*innerIt) != NO_PLAYER);
 					CvAssert(CanEverVote(*innerIt));
-					GET_PLAYER(*innerIt).GetDiplomacyAI()->SetTurnsSinceWeLikedTheirProposal(eProposer, 0);
+					GET_PLAYER(*innerIt).GetDiplomacyAI()->SetWeLikedTheirProposalTurn(eProposer, GC.getGame().getGameTurn());
+					GET_PLAYER(*innerIt).GetDiplomacyAI()->SetWeDislikedTheirProposalTurn(eProposer, -1);
 				}
 				LeagueHelpers::PlayerList vDislikers = GetMembersThatDislikeProposal(iResolutionID, eProposer);
 				for (LeagueHelpers::PlayerList::iterator innerIt = vDislikers.begin(); innerIt != vDislikers.end(); ++innerIt)
 				{
 					CvAssert((*innerIt) != NO_PLAYER);
 					CvAssert(CanEverVote(*innerIt));
-					GET_PLAYER(*innerIt).GetDiplomacyAI()->SetTurnsSinceWeDislikedTheirProposal(eProposer, 0);
+					GET_PLAYER(*innerIt).GetDiplomacyAI()->SetWeDislikedTheirProposalTurn(eProposer, GC.getGame().getGameTurn());
+					GET_PLAYER(*innerIt).GetDiplomacyAI()->SetWeLikedTheirProposalTurn(eProposer, -1);
 				}
 			}
 
@@ -7170,7 +7174,8 @@ void CvLeague::FinishSession()
 			{
 				for (LeagueHelpers::PlayerList::iterator playerIt = vHelpedOutcome.begin(); playerIt != vHelpedOutcome.end(); ++playerIt)
 				{
-					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTurnsSinceTheySupportedOurProposal(*playerIt, 0);
+					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTheySupportedOurProposalTurn(*playerIt, GC.getGame().getGameTurn());
+					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTheyFoiledOurProposalTurn(*playerIt, -1);
 				}
 #if defined(MOD_BALANCE_CORE)
 				GET_PLAYER(eProposer).doInstantYield(INSTANT_YIELD_TYPE_PROPOSAL);
@@ -7186,7 +7191,8 @@ void CvLeague::FinishSession()
 			{
 				for (LeagueHelpers::PlayerList::iterator playerIt = vHelpedOutcome.begin(); playerIt != vHelpedOutcome.end(); ++playerIt)
 				{
-					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTurnsSinceTheyFoiledOurProposal(*playerIt, 0);
+					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTheyFoiledOurProposalTurn(*playerIt, GC.getGame().getGameTurn());
+					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTheySupportedOurProposalTurn(*playerIt, -1);
 				}
 			}
 		}
@@ -7209,7 +7215,8 @@ void CvLeague::FinishSession()
 			{
 				for (LeagueHelpers::PlayerList::iterator playerIt = vHelpedOutcome.begin(); playerIt != vHelpedOutcome.end(); ++playerIt)
 				{
-					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTurnsSinceTheySupportedOurProposal(*playerIt, 0);
+					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTheySupportedOurProposalTurn(*playerIt, GC.getGame().getGameTurn());
+					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTheyFoiledOurProposalTurn(*playerIt, -1);
 				}
 #if defined(MOD_BALANCE_CORE)
 				GET_PLAYER(eProposer).doInstantYield(INSTANT_YIELD_TYPE_PROPOSAL);
@@ -7231,7 +7238,8 @@ void CvLeague::FinishSession()
 			{
 				for (LeagueHelpers::PlayerList::iterator playerIt = vHelpedOutcome.begin(); playerIt != vHelpedOutcome.end(); ++playerIt)
 				{
-					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTurnsSinceTheyFoiledOurProposal(*playerIt, 0);
+					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTheyFoiledOurProposalTurn(*playerIt, GC.getGame().getGameTurn());
+					GET_PLAYER(eProposer).GetDiplomacyAI()->SetTheySupportedOurProposalTurn(*playerIt, -1);
 				}
 			}
 
@@ -7274,7 +7282,7 @@ void CvLeague::FinishSession()
 	{
 		for (LeagueHelpers::PlayerList::iterator playerIt = vSupportedNewHost.begin(); playerIt != vSupportedNewHost.end(); ++playerIt)
 		{
-			GET_PLAYER(eNewHost).GetDiplomacyAI()->SetTurnsSinceTheySupportedOurHosting(*playerIt, 0);
+			GET_PLAYER(eNewHost).GetDiplomacyAI()->SetTheySupportedOurHostingTurn(*playerIt, GC.getGame().getGameTurn());
 		}
 	}
 

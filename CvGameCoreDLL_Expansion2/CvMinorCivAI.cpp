@@ -4143,11 +4143,10 @@ void CvMinorCivAI::Reset()
 #endif
 	}
 
-	for(int iI = 0; iI < REALLY_MAX_TEAMS; iI++)
+	for (int iI = 0; iI < REALLY_MAX_TEAMS; iI++)
 	{
-#if defined(MOD_BALANCE_CORE_MINORS) || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
-		m_aiJerk[iI] = 0;
-#endif
+		m_aiTurnLastAttacked[iI] = -1;
+		m_abIgnoreJerk[iI] = false;
 		m_abPermanentWar[iI] = false;
 		m_abWaryOfTeam[iI] = false;
 	}
@@ -4253,7 +4252,8 @@ void CvMinorCivAI::Read(FDataStream& kStream)
 	kStream >> m_bIsRebellionActive;
 	kStream >> m_bIsHordeActive;
 	kStream >> m_iCooldownSpawn;
-	kStream >> m_aiJerk;
+	kStream >> m_aiTurnLastAttacked;
+	kStream >> m_abIgnoreJerk;
 	kStream >> m_abIsMarried;
 	kStream >> m_ePermanentAlly;
 	kStream >> m_bNoAlly;
@@ -4350,7 +4350,8 @@ void CvMinorCivAI::Write(FDataStream& kStream) const
 	kStream << m_bIsRebellionActive;
 	kStream << m_bIsHordeActive;
 	kStream << m_iCooldownSpawn;
-	kStream << m_aiJerk;
+	kStream << m_aiTurnLastAttacked;
+	kStream << m_abIgnoreJerk;
 	kStream << m_abIsMarried;
 	kStream << m_ePermanentAlly;
 	kStream << m_bNoAlly;
@@ -4684,31 +4685,20 @@ void CvMinorCivAI::DoTurn()
 #if defined(MOD_BALANCE_CORE_MINORS) || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
 		if (MOD_BALANCE_CORE_MINORS || MOD_DIPLOMACY_CITYSTATES_QUESTS) 
 		{
-			TeamTypes eLoopTeam;
-			for(int iTeamLoop = 0; iTeamLoop < REALLY_MAX_TEAMS; iTeamLoop++)
+			for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 			{
-				eLoopTeam = (TeamTypes) iTeamLoop;
-				if(eLoopTeam != NO_TEAM)
+				PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
+
+				if (GET_PLAYER(eLoopPlayer).isMajorCiv() && GET_PLAYER(eLoopPlayer).isAlive())
 				{
-					if(GET_TEAM(eLoopTeam).isMajorCiv())
+					TeamTypes eLoopTeam = GET_PLAYER(eLoopPlayer).getTeam();
+
+					if (IsFriends(eLoopPlayer) && GetJerkTurnsRemaining(eLoopTeam) > 0)
 					{
-						if(GetJerk(eLoopTeam) > 0)
-						{
-							ChangeJerk(eLoopTeam, -1);
-						}
-						for(int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
-						{
-							PlayerTypes ePlayer = (PlayerTypes) iPlayerLoop;
-							if(ePlayer != NO_PLAYER && GET_PLAYER(ePlayer).getTeam() == eLoopTeam)
-							{
-								if(IsFriends(ePlayer))
-								{
-									SetJerk(eLoopTeam, 0);
-								}
-								TestChangeProtectionFromMajor(ePlayer);
-							}
-						}
+						SetIgnoreJerk(eLoopTeam, true);
 					}
+
+					TestChangeProtectionFromMajor(eLoopPlayer);
 				}
 			}
 		}
@@ -4762,15 +4752,6 @@ void CvMinorCivAI::DoChangeAliveStatus(bool bAlive)
 #if defined(MOD_BALANCE_CORE_MINORS) || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
 		if (MOD_BALANCE_CORE_MINORS || MOD_DIPLOMACY_CITYSTATES_QUESTS) 
 		{
-			TeamTypes eLoopTeam;
-			for(int iTeamLoop = 0; iTeamLoop < REALLY_MAX_TEAMS; iTeamLoop++)
-			{
-				eLoopTeam = (TeamTypes) iTeamLoop;
-				if(eLoopTeam != NO_TEAM)
-				{
-					SetJerk(eLoopTeam, 0);
-				}
-			}
 			SetTurnsSinceRebellion(0);
 		}
 #endif
@@ -6838,7 +6819,7 @@ bool CvMinorCivAI::IsValidQuestForPlayer(PlayerTypes ePlayer, MinorCivQuestTypes
 #if defined(MOD_BALANCE_CORE_MINORS) || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
 	if (MOD_BALANCE_CORE_MINORS || MOD_DIPLOMACY_CITYSTATES_QUESTS) 
 	{
-		if(GetJerk(GET_PLAYER(ePlayer).getTeam()) > 0)
+		if (GetJerkTurnsRemaining(GET_PLAYER(ePlayer).getTeam()) > 0)
 		{
 			return false;
 		}
@@ -11098,7 +11079,7 @@ int CvMinorCivAI::GetFriendshipAnchorWithMajor(PlayerTypes eMajor)
 #if defined(MOD_BALANCE_CORE_MINORS) || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
 	if (MOD_BALANCE_CORE_MINORS || MOD_DIPLOMACY_CITYSTATES_QUESTS) 
 	{
-		if(GetJerk(pMajor->getTeam()) > 0)
+		if (GetJerkTurnsRemaining(pMajor->getTeam()) > 0)
 		{
 			iAnchor += GC.getMINOR_FRIENDSHIP_ANCHOR_MOD_WARY_OF();
 		}
@@ -12361,6 +12342,8 @@ void CvMinorCivAI::DoLiberationByMajor(PlayerTypes eLiberator, TeamTypes eConque
 	SetMajorBoughtOutBy(NO_PLAYER);
 #endif
 
+	SetIgnoreJerk(GET_PLAYER(eLiberator).getTeam(), true);
+
 	//set this to a value > 0 so that it takes one turn until other players may not enter our territory
 	//prevents immediate teleport of AI units in the neighborhood
 	m_iNumThreateningBarbarians = 1;
@@ -12760,25 +12743,22 @@ void CvMinorCivAI::DoChangeProtectionFromMajor(PlayerTypes eMajor, bool bProtect
 		SetTurnLastPledgedProtectionByMajor(eMajor, GC.getGame().getGameTurn());
 		
 #if defined(MOD_EVENTS_MINORS_INTERACTION)
-		if (MOD_EVENTS_MINORS_INTERACTION) {
+		if (MOD_EVENTS_MINORS_INTERACTION) 
+		{
 			GAMEEVENTINVOKE_HOOK(GAMEEVENT_PlayerProtected, eMajor, GetPlayer()->GetID());
 		}
 #endif
 	}
 	else
 	{
-		if(bPledgeNowBroken)
+		if (bPledgeNowBroken)
 		{
 			SetTurnLastPledgeBrokenByMajor(eMajor, GC.getGame().getGameTurn());
 			ChangeFriendshipWithMajorTimes100(eMajor, GC.getMINOR_FRIENDSHIP_DROP_DISHONOR_PLEDGE_TO_PROTECT());
-
-			int iJerk = /*50*/ GC.getBALANCE_CS_WAR_COOLDOWN_RATE();
-			iJerk *= GC.getGame().getGameSpeedInfo().getTrainPercent();
-			iJerk /= 100;
-			SetJerk(GET_PLAYER(eMajor).getTeam(), iJerk);
 		}
 #if defined(MOD_EVENTS_MINORS_INTERACTION)
-		if (MOD_EVENTS_MINORS_INTERACTION) {
+		if (MOD_EVENTS_MINORS_INTERACTION) 
+		{
 			GAMEEVENTINVOKE_HOOK(GAMEEVENT_PlayerRevoked, eMajor, GetPlayer()->GetID(), bPledgeNowBroken);
 		}
 #endif
@@ -17460,13 +17440,10 @@ void CvMinorCivAI::DoTeamDeclaredWarOnMe(TeamTypes eEnemyTeam)
 		}
 	}
 #if defined(MOD_BALANCE_CORE_MINORS) || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
-	if(MOD_BALANCE_CORE_MINORS || MOD_DIPLOMACY_CITYSTATES_QUESTS) 
+	if (MOD_BALANCE_CORE_MINORS || MOD_DIPLOMACY_CITYSTATES_QUESTS) 
 	{
-		int iJerk = /*50*/ GC.getBALANCE_CS_WAR_COOLDOWN_RATE();
-		iJerk *= GC.getGame().getGameSpeedInfo().getTrainPercent();
-		iJerk /= 100;
-		SetJerk(eEnemyTeam, iJerk);
-
+		SetTurnLastAttacked(eEnemyTeam, GC.getGame().getGameTurn());
+		SetIgnoreJerk(eEnemyTeam, false);
 	}
 #endif
 
@@ -17522,22 +17499,51 @@ void CvMinorCivAI::SetWaryOfTeam(TeamTypes eTeam, bool bValue)
 }
 #if defined(MOD_BALANCE_CORE_MINORS)  || defined(MOD_DIPLOMACY_CITYSTATES_QUESTS)
 //JERK COOLDOWN RATE
+int CvMinorCivAI::GetTurnLastAttacked(TeamTypes eTeam) const
+{
+	if (eTeam < 0 || eTeam >= MAX_CIV_TEAMS) return -1;
+	return m_aiTurnLastAttacked[eTeam];
+}
 
-void CvMinorCivAI::ChangeJerk(TeamTypes eTeam, int iChange)
+void CvMinorCivAI::SetTurnLastAttacked(TeamTypes eTeam, int iTurn)
 {
-	SetJerk(eTeam, GetJerk(eTeam) + iChange);
+	if (eTeam < 0 || eTeam >= MAX_CIV_TEAMS) return;
+	m_aiTurnLastAttacked[eTeam] = max(iTurn, -1);
 }
-int CvMinorCivAI::GetJerk(TeamTypes eTeam) const
+
+int CvMinorCivAI::GetJerkTurnsRemaining(TeamTypes eTeam) const
 {
-	CvAssertMsg(eTeam >= 0, "ePlayer is expected to be non-negative (invalid Index)");
-	CvAssertMsg(eTeam < MAX_CIV_TEAMS, "ePlayer is expected to be within maximum bounds (invalid Index)");
-	if(eTeam < 0 || eTeam >= MAX_CIV_TEAMS) return 0;  // as defined in Reset()
-	return m_aiJerk[eTeam];
+	if (IsIgnoreJerk(eTeam))
+		return 0;
+
+	int iTurn = GetTurnLastAttacked(eTeam);
+	if (iTurn < 0)
+		return 0;
+
+	int iJerkTurns = /*50*/ GC.getBALANCE_CS_WAR_COOLDOWN_RATE();
+	iJerkTurns *= GC.getGame().getGameSpeedInfo().getTrainPercent();
+	iJerkTurns /= 100;
+
+	if (iJerkTurns <= 0)
+		return 0;
+
+	int iTurnDifference = GC.getGame().getGameTurn() - iTurn;
+	if (iTurnDifference >= iJerkTurns)
+		return 0;
+
+	return (GC.getGame().getGameTurn() - iTurn);
 }
-void CvMinorCivAI::SetJerk(TeamTypes eTeam, int iValue)
+
+bool CvMinorCivAI::IsIgnoreJerk(TeamTypes eTeam) const
 {
-	if(GetJerk(eTeam) != iValue)
-		m_aiJerk[eTeam] = iValue;
+	if (eTeam < 0 || eTeam >= MAX_CIV_TEAMS) return false;
+	return m_abIgnoreJerk[eTeam];
+}
+
+void CvMinorCivAI::SetIgnoreJerk(TeamTypes eTeam, bool bValue)
+{
+	if (eTeam < 0 || eTeam >= MAX_CIV_TEAMS) return;
+	m_abIgnoreJerk[eTeam] = bValue;
 }
 
 PlayerTypes CvMinorCivAI::GetPermanentAlly() const

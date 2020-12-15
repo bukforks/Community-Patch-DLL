@@ -47,6 +47,14 @@
 		<Row Tag="TXT_KEY_YIELD_FROM_EMPIRE_POP_EXTRA">
 			<Text>{1_Num} extra {2_IconString} from [ICON_CITIZEN] Population in Empire</Text>
 		</Row>
+
+		<!-- Include City Name in "Work Has Begun On" Notification -->
+		<Row Tag="TXT_KEY_MISC_WORK_HAS_BEGUN_IN_CITY">
+			<Text>[SPACE]Work has now begun on {TXT_KEY_GRAMMAR_A_AN &lt;&lt; {@1_ProdName}} in {@2_CityName}.</Text>
+		</Row>
+		<Row Tag="TXT_KEY_MISC_WORK_HAS_BEGUN_IN_CITY_LIMITED">
+			<Text>[SPACE]Work has now begun on {@1_ProdName} in {@2_CityName}.</Text>
+		</Row>
 		
 		<!-- America - Flavoured -->
 		<Row Tag="TXT_KEY_SPY_NAME_AMERICA_10">
