@@ -11273,12 +11273,8 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 			iReligiosityScore += 2;
 		}
 
-#if defined(MOD_BALANCE_CORE)
 		iReligiosityScore += (MOD_BALANCE_CORE && GetPlayer()->GetPlayerTraits()->IsReligious()) ? 2 : 0;
-#endif
-		
-		if (iGameEra < 2 || iGameEra > 3) // Religion matters most in the Medieval and Renaissance Eras!
-			iReligiosityScore /= 2;
+		iReligiosityScore /= 2;
 
 		// Have they been converting our cities? Grr...
 		if (GetNegativeReligiousConversionPoints(ePlayer) > 0 && (!IsPlayerMadeNoConvertPromise(ePlayer) || IsPlayerIgnoredNoConvertPromise(ePlayer) || IsPlayerBrokenNoConvertPromise(ePlayer)))
@@ -11424,10 +11420,8 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 		iIdeologueScore += 2;
 	}
 
-#if defined(MOD_BALANCE_CORE)
 	iIdeologueScore += (bCultural || bCulturalTraits) ? 2 : 0;
 	iIdeologueScore += (bGoingForCultureVictory || bCloseToCultureVictory) ? 2 : 0;
-#endif
 
 	if (iGameEra != 6 && !bGoingForCultureVictory && !bCloseToCultureVictory) // Ideology matters most in the Atomic Era (or if we're going for culture victory)!
 		iIdeologueScore /= 2;
@@ -23868,7 +23862,20 @@ bool CvDiplomacyAI::IsIgnoreReligionDifferences(PlayerTypes ePlayer) const
 	if (GetNegativeReligiousConversionPoints(ePlayer) > 0)
 		return false;
 
-	if (IsAtWar(ePlayer) || IsCapitalCapturedBy(ePlayer) || IsHolyCityCapturedBy(ePlayer) || IsUntrustworthy(ePlayer))
+	if (IsCapitalCapturedBy(ePlayer) || IsHolyCityCapturedBy(ePlayer))
+		return false;
+
+	// Special diplomatic behavior for Celts - no natural religion spread
+	if (!HasPlayerEverConvertedCity(ePlayer) && !GET_PLAYER(ePlayer).GetDiplomacyAI()->HasPlayerEverConvertedCity(GetPlayer()->GetID()))
+	{
+		if (GetPlayer()->GetPlayerTraits()->IsNoNaturalReligionSpread())
+			return true;
+
+		if (GET_PLAYER(ePlayer).GetPlayerTraits()->IsNoNaturalReligionSpread())
+			return true;
+	}
+
+	if (IsAtWar(ePlayer) || IsUntrustworthy(ePlayer))
 		return false;
 
 	if (IsPlayerLiberatedCapital(ePlayer) || WasResurrectedBy(ePlayer) || GetDoFType(ePlayer) == DOF_TYPE_BATTLE_BROTHERS)
@@ -23895,6 +23902,7 @@ bool CvDiplomacyAI::IsIgnoreIdeologyDifferences(PlayerTypes ePlayer) const
 		for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 		{
 			PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
+
 			if (IsPlayerValid(eLoopPlayer))
 			{
 				if (GC.getGame().GetGameLeagues()->IsIdeologyEmbargoed(GetPlayer()->GetID(), eLoopPlayer))
