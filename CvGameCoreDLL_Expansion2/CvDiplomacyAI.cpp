@@ -37758,17 +37758,40 @@ bool CvDiplomacyAI::CanStartCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTarget
 /// Updates our coop war states for the turn
 void CvDiplomacyAI::DoUpdateCoopWarStates()
 {
-	int iTurn = GC.getGame().getGameTurn();
+	int iGameTurn = GC.getGame().getGameTurn();
 
 	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 	{
 		PlayerTypes eLoopPlayer = (PlayerTypes) iPlayerLoop;
 
+		if (eLoopPlayer == GetPlayer()->GetID())
+			continue;
+
+		if (!GET_PLAYER(eLoopPlayer).isAlive())
+			continue;
+
+		if (!IsHasMet(eLoopPlayer, true))
+			continue;
+
 		for (int iThirdPartyLoop = 0; iThirdPartyLoop < MAX_MAJOR_CIVS; iThirdPartyLoop++)
 		{
 			PlayerTypes eThirdParty = (PlayerTypes) iThirdPartyLoop;
+
+			if (!GET_PLAYER(eThirdParty).isAlive())
+				continue;
+
+			if (GET_PLAYER(eThirdParty).getTeam() == GET_PLAYER(eLoopPlayer).getTeam())
+				continue;
+
+			if (!IsHasMet(eThirdParty, false))
+				continue;
+
 			CoopWarStates eCoopWarState = GetCoopWarState(eLoopPlayer, eThirdParty);
-			int iTurnDifference = iTurn - GetCoopWarStateChangeTurn(eLoopPlayer, eThirdParty);
+			int iTurn = GetCoopWarStateChangeTurn(eLoopPlayer, eThirdParty);
+			if (iTurn < 0 || eCoopWarState == NO_COOP_WAR_STATE)
+				continue;
+
+			int iTurnDifference = iGameTurn - iTurn;
 
 			if (eCoopWarState == COOP_WAR_STATE_REJECTED || eCoopWarState == COOP_WAR_STATE_WARNED_TARGET)
 			{
